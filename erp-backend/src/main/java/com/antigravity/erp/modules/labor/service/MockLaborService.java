@@ -40,26 +40,33 @@ public class MockLaborService {
     @PostConstruct
     public void init() {
         // Seed some professional data based on the physical forms
-        addLaborer("Hemant Bhardwaj", "Unskilled", null, "Ajmera Manhattan", LaborerStatus.ACTIVE, "AADHAR", "1234-5678-9012");
-        addLaborer("Amit Singh", "Carpenter", null, "Skyline Towers", LaborerStatus.ACTIVE, "PAN", "ABCDE1234F");
-        addLaborer("Rajesh Kumar", "Steel fitter", null, "Delta Heights", LaborerStatus.ACTIVE, "AADHAR", "9876-5432-1098");
-        addLaborer("Vijay Sharma", "Block mason", null, "Metro Plaza", LaborerStatus.ON_LEAVE, "PAN", "FGHIJ5678K");
-        addLaborer("Suresh Gupta", "Other", "Painter", "Central Station", LaborerStatus.ACTIVE, "ELECTION_CARD", "XYZ987654");
+        addLaborer("Hemant Bhardwaj", "Unskilled", null, "Ajmera Manhattan", LaborerStatus.ACTIVE, "AADHAR", "1234-5678-9012", "Maharashtra");
+        addLaborer("Amit Singh", "Carpenter", null, "Skyline Towers", LaborerStatus.ACTIVE, "PAN", "ABCDE1234F", "Delhi");
+        addLaborer("Rajesh Kumar", "Steel fitter", null, "Delta Heights", LaborerStatus.ACTIVE, "AADHAR", "9876-5432-1098", "Uttar Pradesh");
+        addLaborer("Vijay Sharma", "Block mason", null, "Metro Plaza", LaborerStatus.ON_LEAVE, "PAN", "FGHIJ5678K", "Bihar");
+        addLaborer("Suresh Gupta", "Other", "Painter", "Central Station", LaborerStatus.ACTIVE, "ELECTION_CARD", "XYZ987654", "Rajasthan");
         
         // Add more structured mock data to reach 50 entries
+        String[] states = {"Maharashtra", "Gujarat", "Karnataka", "Tamil Nadu", "Uttar Pradesh"};
         for (int i = 1; i <= 45; i++) {
             String designation = List.of("Carpenter", "Steel fitter", "Block mason", "Plaster mason", "Unskilled").get(i % 5);
-            addLaborer("Worker " + i, designation, null, "Green Valley", LaborerStatus.ACTIVE, "AADHAR", "4000-0000-00" + i);
+            addLaborer("Worker " + i, designation, null, "Green Valley", LaborerStatus.ACTIVE, "AADHAR", "4000-0000-00" + i, states[i % 5]);
         }
     }
 
-    private void addLaborer(String name, String designation, String detail, String site, LaborerStatus status, String idType, String idNo) {
+    private void addLaborer(String name, String designation, String detail, String site, LaborerStatus status, String idType, String idNo, String state) {
         String prefix = prefixes.getOrDefault(designation, "OT");
         int count = counters.get(designation).getAndIncrement();
         String grNo = prefix + String.format("%03d", count);
 
         // Simulated historical creation
         LocalDateTime created = LocalDateTime.now().minusDays((int) (Math.random() * 365));
+
+        Laborer.Address address = Laborer.Address.builder()
+                .line("123, Main Street, Local Area")
+                .state(state)
+                .pincode("400001")
+                .build();
 
         laborers.add(Laborer.builder()
                 .grNo(grNo)
@@ -68,6 +75,8 @@ public class MockLaborService {
                 .designationDetail(detail)
                 .siteAddress(site)
                 .employerName("Civic Construction Ltd")
+                .permanentAddress(address)
+                .contactNo("+91-9876543210")
                 .status(status)
                 .dateOfBirth(LocalDate.of(1990, 3, 5))
                 .dateOfJoining(LocalDate.of(2023, 1, 15))
@@ -100,6 +109,16 @@ public class MockLaborService {
     }
 
     private LaborerDTO mapToDTO(Laborer laborer) {
+        // Map nested Address object
+        LaborerDTO.AddressDTO addressDTO = null;
+        if (laborer.getPermanentAddress() != null) {
+            addressDTO = LaborerDTO.AddressDTO.builder()
+                    .line(laborer.getPermanentAddress().getLine())
+                    .state(laborer.getPermanentAddress().getState())
+                    .pincode(laborer.getPermanentAddress().getPincode())
+                    .build();
+        }
+
         return LaborerDTO.builder()
                 .grNo(laborer.getGrNo())
                 .fullName(laborer.getFullName())
@@ -107,7 +126,7 @@ public class MockLaborService {
                 .designationDetail(laborer.getDesignationDetail())
                 .employerName(laborer.getEmployerName())
                 .siteAddress(laborer.getSiteAddress())
-                .permanentAddress(laborer.getPermanentAddress())
+                .permanentAddress(addressDTO)
                 .contactNo(laborer.getContactNo())
                 .dateOfBirth(laborer.getDateOfBirth())
                 .dateOfJoining(laborer.getDateOfJoining())

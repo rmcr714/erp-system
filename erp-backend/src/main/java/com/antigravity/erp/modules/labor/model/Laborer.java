@@ -25,7 +25,7 @@ public class Laborer {
     private String siteAddress;
     
     // Personal Details
-    private String permanentAddress;
+    private Address permanentAddress;
     private String contactNo;
     private LocalDate dateOfBirth;
     private LocalDate dateOfJoining;
@@ -46,6 +46,16 @@ public class Laborer {
     // Auditing
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Address {
+        private String line;
+        private String state;
+        private String pincode;
+    }
 
     @Data
     @Builder

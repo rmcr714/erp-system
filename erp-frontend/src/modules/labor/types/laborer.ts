@@ -10,6 +10,12 @@ export interface IdProof {
   idNumber: string;
 }
 
+export interface Address {
+  line: string;
+  state: string;
+  pincode: string;
+}
+
 export interface Laborer {
   grNo: string;
   fullName: string;
@@ -17,7 +23,7 @@ export interface Laborer {
   designationDetail?: string;
   employerName: string;
   siteAddress: string;
-  permanentAddress: string;
+  permanentAddress: Address;
   contactNo: string;
   dateOfBirth: string;
   dateOfJoining: string;

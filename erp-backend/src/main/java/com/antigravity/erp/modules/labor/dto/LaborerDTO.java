@@ -19,7 +19,7 @@ public class LaborerDTO {
     private String designationDetail;
     private String employerName;
     private String siteAddress;
-    private String permanentAddress;
+    private AddressDTO permanentAddress;
     private String contactNo;
     private LocalDate dateOfBirth;
     private LocalDate dateOfJoining;
@@ -35,6 +35,16 @@ public class LaborerDTO {
     private String photoUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AddressDTO {
+        private String line;
+        private String state;
+        private String pincode;
+    }
 
     @Data
     @Builder
