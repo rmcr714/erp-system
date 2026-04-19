@@ -1,0 +1,29 @@
+# IDE and OS settings
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Maven / Java Logging
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*
+
+# Node / React Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporaries
+tmp/
+temp/

@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap');
+
+@theme {
+  /* Brand Colors */
+  --color-bg-main: #0a0c10;
+  --color-bg-sidebar: #11141b;
+  --color-bg-card: #1a1e28;
+  --color-accent-primary: #3b82f6;
+  --color-accent-secondary: #6366f1;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-glass: rgba(255, 255, 255, 0.03);
+  
+  /* Status Colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+
+  /* Fonts */
+  --font-inter: 'Inter', sans-serif;
+  --font-outfit: 'Outfit', sans-serif;
+  
+  /* Custom Spacing */
+  --spacing-sidebar: 260px;
+}
+
+@layer base {
+  * {
+    @apply border-border-subtle;
+  }
+
+  body {
+    @apply font-inter bg-bg-main text-text-primary antialiased overflow-hidden;
+    color-scheme: dark;
+  }
+
+  h1, h2, h3 {
+    @apply font-outfit;
+  }
+}
+
+@layer components {
+  /* Helper for glassmorphism shared across cards/sidebar */
+  .glass-card {
+    @apply bg-bg-card border border-border-subtle rounded-[20px] transition-all duration-200;
+  }
+}

@@ -1,0 +1,136 @@
+package com.antigravity.erp.modules.labor.service;
+
+import com.antigravity.erp.modules.labor.model.Laborer;
+import com.antigravity.erp.modules.labor.enums.LaborerStatus;
+import com.antigravity.erp.modules.labor.dto.LaborerDTO;
+import jakarta.annotation.PostConstruct;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+@Service
+public class MockLaborService {
+    private final List<Laborer> laborers = new ArrayList<>();
+    
+    // Counters for GR Prefix logic
+    private final Map<String, String> prefixes = Map.of(
+        "Carpenter", "CA",
+        "Steel fitter", "SF",
+        "Block mason", "BM",
+        "Plaster mason", "PM",
+        "Unskilled", "US",
+        "Other", "OT"
+    );
+    
+    private final Map<String, AtomicInteger> counters = Map.of(
+        "Carpenter", new AtomicInteger(1),
+        "Steel fitter", new AtomicInteger(1),
+        "Block mason", new AtomicInteger(1),
+        "Plaster mason", new AtomicInteger(1),
+        "Unskilled", new AtomicInteger(1),
+        "Other", new AtomicInteger(1)
+    );
+
+    @PostConstruct
+    public void init() {
+        // Seed some professional data based on the physical forms
+        addLaborer("Hemant Bhardwaj", "Unskilled", null, "Ajmera Manhattan", LaborerStatus.ACTIVE, "AADHAR", "1234-5678-9012");
+        addLaborer("Amit Singh", "Carpenter", null, "Skyline Towers", LaborerStatus.ACTIVE, "PAN", "ABCDE1234F");
+        addLaborer("Rajesh Kumar", "Steel fitter", null, "Delta Heights", LaborerStatus.ACTIVE, "AADHAR", "9876-5432-1098");
+        addLaborer("Vijay Sharma", "Block mason", null, "Metro Plaza", LaborerStatus.ON_LEAVE, "PAN", "FGHIJ5678K");
+        addLaborer("Suresh Gupta", "Other", "Painter", "Central Station", LaborerStatus.ACTIVE, "ELECTION_CARD", "XYZ987654");
+        
+        // Add more structured mock data to reach 50 entries
+        for (int i = 1; i <= 45; i++) {
+            String designation = List.of("Carpenter", "Steel fitter", "Block mason", "Plaster mason", "Unskilled").get(i % 5);
+            addLaborer("Worker " + i, designation, null, "Green Valley", LaborerStatus.ACTIVE, "AADHAR", "4000-0000-00" + i);
+        }
+    }
+
+    private void addLaborer(String name, String designation, String detail, String site, LaborerStatus status, String idType, String idNo) {
+        String prefix = prefixes.getOrDefault(designation, "OT");
+        int count = counters.get(designation).getAndIncrement();
+        String grNo = prefix + String.format("%03d", count);
+
+        // Simulated historical creation
+        LocalDateTime created = LocalDateTime.now().minusDays((int) (Math.random() * 365));
+
+        laborers.add(Laborer.builder()
+                .grNo(grNo)
+                .fullName(name)
+                .designation(designation)
+                .designationDetail(detail)
+                .siteAddress(site)
+                .employerName("Civic Construction Ltd")
+                .status(status)
+                .dateOfBirth(LocalDate.of(1990, 3, 5))
+                .dateOfJoining(LocalDate.of(2023, 1, 15))
+                .idProof(Laborer.IdProof.builder().type(idType).idNumber(idNo).build())
+                .bankDetails(Laborer.BankDetails.builder()
+                        .bankName("State Bank of India")
+                        .branch("Main Branch")
+                        .accountNo("30948572" + count)
+                        .ifscCode("SBIN0001234")
+                        .build())
+                .createdAt(created)
+                .updatedAt(created.plusHours(12))
+                .build());
+    }
+
+    public List<LaborerDTO> getAllLaborers() {
+        return laborers.stream().map(this::mapToDTO).collect(Collectors.toList());
+    }
+
+    public List<LaborerDTO> searchLaborers(String query) {
+        if (query == null || query.isEmpty()) return getAllLaborers();
+        String lowerQuery = query.toLowerCase();
+        return laborers.stream()
+                .filter(l -> l.getFullName().toLowerCase().contains(lowerQuery) || 
+                             l.getGrNo().toLowerCase().contains(lowerQuery) ||
+                             l.getDesignation().toLowerCase().contains(lowerQuery) ||
+                             (l.getDesignationDetail() != null && l.getDesignationDetail().toLowerCase().contains(lowerQuery)))
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private LaborerDTO mapToDTO(Laborer laborer) {
+        return LaborerDTO.builder()
+                .grNo(laborer.getGrNo())
+                .fullName(laborer.getFullName())
+                .designation(laborer.getDesignation())
+                .designationDetail(laborer.getDesignationDetail())
+                .employerName(laborer.getEmployerName())
+                .siteAddress(laborer.getSiteAddress())
+                .permanentAddress(laborer.getPermanentAddress())
+                .contactNo(laborer.getContactNo())
+                .dateOfBirth(laborer.getDateOfBirth())
+                .dateOfJoining(laborer.getDateOfJoining())
+                .height(laborer.getHeight())
+                .weight(laborer.getWeight())
+                .bloodGroup(laborer.getBloodGroup())
+                .joinByReference(laborer.getJoinByReference())
+                .hasPf(laborer.isHasPf())
+                .pfNo(laborer.getPfNo())
+                .idProof(LaborerDTO.IdProofDTO.builder()
+                        .type(laborer.getIdProof().getType())
+                        .idNumber(laborer.getIdProof().getIdNumber())
+                        .build())
+                .bankDetails(LaborerDTO.BankDetailsDTO.builder()
+                        .bankName(laborer.getBankDetails().getBankName())
+                        .branch(laborer.getBankDetails().getBranch())
+                        .accountNo(laborer.getBankDetails().getAccountNo())
+                        .ifscCode(laborer.getBankDetails().getIfscCode())
+                        .build())
+                .status(laborer.getStatus())
+                .photoUrl(laborer.getPhotoUrl())
+                .createdAt(laborer.getCreatedAt())
+                .updatedAt(laborer.getUpdatedAt())
+                .build();
+    }
+}
