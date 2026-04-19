@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import type { Laborer } from '../types/laborer';
 import { exportLaborerToExcel } from '../utils/excelExport';
+import { scanLaborForm, countExtractedFields } from '../services/formScannerService';
 
 interface AddLaborerModalProps {
   isOpen: boolean;
@@ -25,27 +26,33 @@ const REQUIRED_FIELDS = [
   'bankDetails.accountNo', 'bankDetails.ifscCode'
 ];
 
-const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) => {
-  const [formData, setFormData] = useState<Partial<Laborer>>({
-    designation: 'Unskilled',
-    hasPf: false,
-    status: 'Active',
-    idProof: { type: 'AADHAR', idNumber: '' },
-    bankDetails: { bankName: '', branch: '', accountNo: '', ifscCode: '' },
-    permanentAddress: { line: '', state: '', pincode: '' }
-  });
+type ScanState = 'idle' | 'loading' | 'success' | 'error';
 
+const EMPTY_FORM: Partial<Laborer> = {
+  designation: 'Unskilled',
+  hasPf: false,
+  status: 'Active',
+  idProof: { type: 'AADHAR', idNumber: '' },
+  bankDetails: { bankName: '', branch: '', accountNo: '', ifscCode: '' },
+  permanentAddress: { line: '', state: '', pincode: '' }
+};
+
+const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) => {
+  const [formData, setFormData] = useState<Partial<Laborer>>(EMPTY_FORM);
   const [errors, setErrors] = useState<Set<string>>(new Set());
+  const [scanState, setScanState] = useState<ScanState>('idle');
+  const [scanMessage, setScanMessage] = useState('');
+  const [scanPreview, setScanPreview] = useState<string | null>(null);
+  const scanInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
-  const handleInputChange = (field: string, value: any) => {
-    // Clear error on field change
-    setErrors(prev => { const copy = new Set(prev); copy.delete(field); return copy; });
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
+  const handleInputChange = (field: string, value: any) => {
+    setErrors(prev => { const c = new Set(prev); c.delete(field); return c; });
     if (field.includes('.')) {
-      const parts = field.split('.');
-      const [parent, child] = parts;
+      const [parent, child] = field.split('.');
       setFormData(prev => ({
         ...prev,
         [parent]: { ...(prev[parent as keyof Laborer] as any), [child]: value }
@@ -58,22 +65,63 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
   const getFieldValue = (field: string): any => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      return (formData[parent as keyof Laborer] as any)?.[child];
+      return (formData[parent as keyof Laborer] as any)?.[child] ?? '';
     }
-    return formData[field as keyof Laborer];
+    return (formData[field as keyof Laborer] as any) ?? '';
   };
 
   const validate = (): boolean => {
     const newErrors = new Set<string>();
     REQUIRED_FIELDS.forEach(field => {
       const value = getFieldValue(field);
-      if (!value || String(value).trim() === '') {
-        newErrors.add(field);
-      }
+      if (!value || String(value).trim() === '') newErrors.add(field);
     });
     setErrors(newErrors);
     return newErrors.size === 0;
   };
+
+  // ── Scanner Logic ──────────────────────────────────────────────────────────
+
+  const handleScanUpload = async (file: File) => {
+    setScanState('loading');
+    setScanMessage('');
+    setScanPreview(URL.createObjectURL(file));
+
+    try {
+      const extracted = await scanLaborForm(file);
+      const count = countExtractedFields(extracted);
+
+      // Deep-merge extracted data into formData, preserving nested objects
+      setFormData(prev => {
+        const next: any = { ...prev };
+        for (const [key, value] of Object.entries(extracted)) {
+          if (value !== null && value !== undefined) {
+            if (typeof value === 'object' && !Array.isArray(value)) {
+              next[key] = { ...(prev[key as keyof Laborer] as object), ...value };
+            } else {
+              next[key] = value;
+            }
+          }
+        }
+        return next as Partial<Laborer>;
+      });
+
+      setScanState('success');
+      setScanMessage(`✓ ${count} field${count !== 1 ? 's' : ''} auto-filled from the scanned form. Please review and correct if needed.`);
+    } catch (err: any) {
+      setScanState('error');
+      setScanMessage(err.message || 'Something went wrong. Please try again or fill manually.');
+    }
+  };
+
+  const resetScanner = () => {
+    setScanState('idle');
+    setScanMessage('');
+    setScanPreview(null);
+    if (scanInputRef.current) scanInputRef.current.value = '';
+  };
+
+  // ── Style helpers ──────────────────────────────────────────────────────────
 
   const inputClass = (field: string) =>
     `w-full bg-white/5 border p-3 rounded-xl outline-none transition-all focus:ring-1 ${
@@ -84,9 +132,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
 
   const selectClass = (field: string) =>
     `w-full bg-white/5 border p-3 rounded-xl outline-none transition-all [&_option]:bg-bg-card [&_option]:text-text-primary ${
-      errors.has(field)
-        ? 'border-red-500'
-        : 'border-border-subtle focus:border-accent-primary'
+      errors.has(field) ? 'border-red-500' : 'border-border-subtle focus:border-accent-primary'
     }`;
 
   const fieldError = (field: string) =>
@@ -94,9 +140,12 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
       <p className="text-red-400 text-xs mt-1 animate-in fade-in">This field is required.</p>
     ) : null;
 
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-main/80 backdrop-blur-md p-4">
       <div className="glass-card w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border-white/10">
+
         {/* Header */}
         <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-white/5">
           <div>
@@ -109,7 +158,126 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
         {/* Form Body */}
         <div className="flex-1 overflow-y-auto p-8 space-y-10">
 
-          {/* Section 1: Core Identification */}
+          {/* ── AI SCANNER ZONE ─────────────────────────────────────────────── */}
+          <section>
+            <h3 className="text-accent-primary font-bold uppercase tracking-widest text-xs mb-4 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-accent-primary animate-pulse"></span>
+              AI Form Scanner <span className="ml-1 px-2 py-0.5 text-[9px] rounded-full bg-accent-primary/20 text-accent-primary border border-accent-primary/30 tracking-wider">POC</span>
+            </h3>
+
+            <div
+              className={`relative rounded-2xl border-2 border-dashed transition-all duration-300 overflow-hidden ${
+                scanState === 'loading'
+                  ? 'border-accent-primary/60 bg-accent-primary/5'
+                  : scanState === 'success'
+                    ? 'border-emerald-500/60 bg-emerald-500/5'
+                    : scanState === 'error'
+                      ? 'border-red-500/60 bg-red-500/5'
+                      : 'border-border-subtle bg-white/3 hover:border-accent-primary/40 hover:bg-white/5'
+              }`}
+            >
+              {/* Idle state */}
+              {scanState === 'idle' && (
+                <button
+                  type="button"
+                  onClick={() => scanInputRef.current?.click()}
+                  className="w-full flex flex-col sm:flex-row items-center gap-4 p-6 text-left group"
+                >
+                  <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    🔍
+                  </div>
+                  <div>
+                    <p className="font-bold text-text-primary text-sm">Scan Physical Registration Form</p>
+                    <p className="text-text-secondary text-xs mt-0.5">
+                      Upload a photo of the filled paper form — AI will read it and auto-fill all fields below.
+                    </p>
+                    <p className="text-text-secondary/60 text-[10px] mt-1 uppercase tracking-tight">
+                      JPG, PNG or WEBP · Powered by Gemini Vision
+                    </p>
+                  </div>
+                  <div className="sm:ml-auto flex-shrink-0">
+                    <span className="px-4 py-2 rounded-xl bg-accent-primary/15 border border-accent-primary/30 text-accent-primary text-xs font-bold">
+                      Upload Form →
+                    </span>
+                  </div>
+                </button>
+              )}
+
+              {/* Loading state */}
+              {scanState === 'loading' && (
+                <div className="flex items-center gap-5 p-6">
+                  {scanPreview && (
+                    <img src={scanPreview} alt="Scanning" className="w-16 h-16 object-cover rounded-xl border border-white/10 opacity-60" />
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-4 h-4 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
+                      <p className="font-bold text-accent-primary text-sm">Reading your form…</p>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-accent-primary rounded-full animate-pulse" style={{ width: '65%' }} />
+                    </div>
+                    <p className="text-text-secondary text-xs mt-1.5">Gemini Vision is extracting field data. This takes a few seconds.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Success state */}
+              {scanState === 'success' && (
+                <div className="flex items-start gap-4 p-5">
+                  {scanPreview && (
+                    <img src={scanPreview} alt="Scanned form" className="w-16 h-16 object-cover rounded-xl border border-emerald-500/30 flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-emerald-400 text-sm mb-0.5">Scan Complete</p>
+                    <p className="text-text-secondary text-xs leading-relaxed">{scanMessage}</p>
+                  </div>
+                  <button
+                    onClick={resetScanner}
+                    title="Scan a different form"
+                    className="flex-shrink-0 text-text-secondary hover:text-text-primary text-lg transition-colors mt-0.5"
+                  >✕</button>
+                </div>
+              )}
+
+              {/* Error state */}
+              {scanState === 'error' && (
+                <div className="flex items-start gap-4 p-5">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-xl">⚠️</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-red-400 text-sm mb-0.5">Scan Failed</p>
+                    <p className="text-text-secondary text-xs leading-relaxed">{scanMessage}</p>
+                    <button
+                      onClick={resetScanner}
+                      className="mt-2 text-xs text-accent-primary hover:underline"
+                    >
+                      ← Try again or fill manually
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <input
+                ref={scanInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleScanUpload(file);
+                }}
+              />
+            </div>
+          </section>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 -mt-4">
+            <div className="flex-1 h-px bg-border-subtle" />
+            <span className="text-[10px] uppercase tracking-widest text-text-secondary/50">or fill manually below</span>
+            <div className="flex-1 h-px bg-border-subtle" />
+          </div>
+
+          {/* ── Section 1: Core Identification ─────────────────────────────── */}
           <section>
             <h3 className="text-accent-primary font-bold uppercase tracking-widest text-xs mb-6 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-accent-primary"></span>
@@ -122,13 +290,18 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                   type="text"
                   className={inputClass('fullName')}
                   placeholder="e.g. Hemant Bhardwaj"
+                  value={getFieldValue('fullName')}
                   onChange={(e) => handleInputChange('fullName', e.target.value)}
                 />
                 {fieldError('fullName')}
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Designation <span className="text-red-400">*</span></label>
-                <select className={selectClass('designation')} onChange={(e) => handleInputChange('designation', e.target.value)}>
+                <select
+                  className={selectClass('designation')}
+                  value={getFieldValue('designation')}
+                  onChange={(e) => handleInputChange('designation', e.target.value)}
+                >
                   <option value="Unskilled">Unskilled</option>
                   <option value="Carpenter">Carpenter</option>
                   <option value="Steel fitter">Steel fitter</option>
@@ -145,6 +318,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                     type="text"
                     className={inputClass('designationDetail')}
                     placeholder="Enter manual designation..."
+                    value={getFieldValue('designationDetail')}
                     onChange={(e) => handleInputChange('designationDetail', e.target.value)}
                   />
                 </div>
@@ -155,6 +329,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                   type="text"
                   className={inputClass('employerName')}
                   placeholder="e.g. Civic Construction Ltd"
+                  value={getFieldValue('employerName')}
                   onChange={(e) => handleInputChange('employerName', e.target.value)}
                 />
                 {fieldError('employerName')}
@@ -165,6 +340,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                   type="text"
                   className={inputClass('siteAddress')}
                   placeholder="e.g. Ajmera Manhattan"
+                  value={getFieldValue('siteAddress')}
                   onChange={(e) => handleInputChange('siteAddress', e.target.value)}
                 />
                 {fieldError('siteAddress')}
@@ -172,7 +348,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
             </div>
           </section>
 
-          {/* Section 2: Personal & Physical */}
+          {/* ── Section 2: Personal & Physical ─────────────────────────────── */}
           <section className="bg-white/5 -mx-8 px-8 py-8 border-y border-border-subtle leading-relaxed">
             <h3 className="text-accent-primary font-bold uppercase tracking-widest text-xs mb-6 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-accent-primary"></span>
@@ -180,7 +356,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-              {/* Address Fields */}
+              {/* Address */}
               <div className="md:col-span-2 space-y-4">
                 <label className="text-sm font-medium text-text-secondary block">Permanent Address <span className="text-red-400">*</span></label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -189,6 +365,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                       type="text"
                       className={inputClass('permanentAddress.line')}
                       placeholder="Address Line (Street, Area, City)"
+                      value={getFieldValue('permanentAddress.line')}
                       onChange={(e) => handleInputChange('permanentAddress.line', e.target.value)}
                     />
                     {fieldError('permanentAddress.line')}
@@ -196,7 +373,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                   <div className="md:col-span-2 space-y-1">
                     <select
                       className={selectClass('permanentAddress.state')}
-                      defaultValue=""
+                      value={getFieldValue('permanentAddress.state')}
                       onChange={(e) => handleInputChange('permanentAddress.state', e.target.value)}
                     >
                       <option value="" disabled>Select State</option>
@@ -210,6 +387,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                       className={inputClass('permanentAddress.pincode')}
                       placeholder="Pincode"
                       maxLength={6}
+                      value={getFieldValue('permanentAddress.pincode')}
                       onChange={(e) => handleInputChange('permanentAddress.pincode', e.target.value)}
                     />
                     {fieldError('permanentAddress.pincode')}
@@ -217,13 +395,14 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                 </div>
               </div>
 
-              {/* Contact Number */}
+              {/* Contact */}
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Contact Number <span className="text-red-400">*</span></label>
                 <input
                   type="text"
                   className={inputClass('contactNo')}
                   placeholder="+91-0000000000"
+                  value={getFieldValue('contactNo')}
                   onChange={(e) => handleInputChange('contactNo', e.target.value)}
                 />
                 {fieldError('contactNo')}
@@ -231,20 +410,40 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
 
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Date of Birth</label>
-                <input type="date" className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none text-text-secondary focus:border-accent-primary transition-all" onChange={(e) => handleInputChange('dateOfBirth', e.target.value)} />
+                <input
+                  type="date"
+                  className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none text-text-secondary focus:border-accent-primary transition-all"
+                  value={getFieldValue('dateOfBirth')}
+                  onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Date of Joining</label>
-                <input type="date" className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none text-text-secondary focus:border-accent-primary transition-all" onChange={(e) => handleInputChange('dateOfJoining', e.target.value)} />
+                <input
+                  type="date"
+                  className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none text-text-secondary focus:border-accent-primary transition-all"
+                  value={getFieldValue('dateOfJoining')}
+                  onChange={(e) => handleInputChange('dateOfJoining', e.target.value)}
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Blood Group</label>
-                <input type="text" className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all" placeholder="O+" onChange={(e) => handleInputChange('bloodGroup', e.target.value)} />
+                <input
+                  type="text"
+                  className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all"
+                  placeholder="O+"
+                  value={getFieldValue('bloodGroup')}
+                  onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-text-secondary">Height</label>
-                  <select className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none transition-all [&_option]:bg-bg-card [&_option]:text-text-primary" onChange={(e) => handleInputChange('height', e.target.value)}>
+                  <select
+                    className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none transition-all [&_option]:bg-bg-card [&_option]:text-text-primary"
+                    value={getFieldValue('height')}
+                    onChange={(e) => handleInputChange('height', e.target.value)}
+                  >
                     <option value="">Select</option>
                     {Array.from({ length: 37 }, (_, i) => {
                       const totalInches = 48 + i;
@@ -257,13 +456,19 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-text-secondary">Weight</label>
-                  <input type="text" className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all" placeholder="e.g. 65kg" onChange={(e) => handleInputChange('weight', e.target.value)} />
+                  <input
+                    type="text"
+                    className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all"
+                    placeholder="e.g. 65kg"
+                    value={getFieldValue('weight')}
+                    onChange={(e) => handleInputChange('weight', e.target.value)}
+                  />
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Section 3: Media */}
+          {/* ── Section 3: Laborer Photo ────────────────────────────────────── */}
           <section className="py-2">
             <h3 className="text-accent-primary font-bold uppercase tracking-widest text-xs mb-6 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-accent-primary"></span>
@@ -271,8 +476,10 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="md:col-span-2 space-y-4">
-                <div className="p-6 rounded-2xl border-2 border-dashed border-border-subtle bg-white/5 hover:border-accent-secondary/50 hover:bg-white/10 transition-all cursor-pointer group relative"
-                     onClick={() => document.getElementById('photo-upload')?.click()}>
+                <div
+                  className="p-6 rounded-2xl border-2 border-dashed border-border-subtle bg-white/5 hover:border-accent-secondary/50 hover:bg-white/10 transition-all cursor-pointer group relative"
+                  onClick={() => document.getElementById('photo-upload')?.click()}
+                >
                   <input
                     id="photo-upload"
                     type="file"
@@ -280,10 +487,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) {
-                        const url = URL.createObjectURL(file);
-                        handleInputChange('photoUrl', url);
-                      }
+                      if (file) handleInputChange('photoUrl', URL.createObjectURL(file));
                     }}
                   />
                   <div className="flex flex-col items-center text-center gap-2">
@@ -319,7 +523,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
             </div>
           </section>
 
-          {/* Section 4: Statutory & Identity */}
+          {/* ── Section 4: Statutory & Identity ────────────────────────────── */}
           <section className="bg-white/5 -mx-8 px-8 py-8 border-y border-border-subtle">
             <h3 className="text-accent-primary font-bold uppercase tracking-widest text-xs mb-6 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-accent-primary"></span>
@@ -332,6 +536,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                     <input
                       type="checkbox"
                       className="w-5 h-5 rounded accent-accent-primary"
+                      checked={!!formData.hasPf}
                       onChange={(e) => handleInputChange('hasPf', e.target.checked)}
                     />
                     <span className="text-sm font-medium text-text-primary uppercase tracking-tighter">PF Account Holder</span>
@@ -340,7 +545,13 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                 {formData.hasPf && (
                   <div className="space-y-2 animate-in fade-in zoom-in-95">
                     <label className="text-sm font-medium text-text-secondary">PF Number</label>
-                    <input type="text" className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all" placeholder="Enter PF No" onChange={(e) => handleInputChange('pfNo', e.target.value)} />
+                    <input
+                      type="text"
+                      className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all"
+                      placeholder="Enter PF No"
+                      value={getFieldValue('pfNo')}
+                      onChange={(e) => handleInputChange('pfNo', e.target.value)}
+                    />
                   </div>
                 )}
               </div>
@@ -349,6 +560,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                 <div className="flex gap-2">
                   <select
                     className="bg-white/5 border border-border-subtle p-3 rounded-xl outline-none [&_option]:bg-bg-card [&_option]:text-text-primary"
+                    value={getFieldValue('idProof.type')}
                     onChange={(e) => handleInputChange('idProof.type', e.target.value)}
                   >
                     <option value="AADHAR">AADHAR</option>
@@ -360,6 +572,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                       type="text"
                       className={inputClass('idProof.idNumber')}
                       placeholder="Enter ID Number"
+                      value={getFieldValue('idProof.idNumber')}
                       onChange={(e) => handleInputChange('idProof.idNumber', e.target.value)}
                     />
                     {fieldError('idProof.idNumber')}
@@ -369,7 +582,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
             </div>
           </section>
 
-          {/* Section 5: Bank Details */}
+          {/* ── Section 5: Bank Details ─────────────────────────────────────── */}
           <section>
             <h3 className="text-accent-primary font-bold uppercase tracking-widest text-xs mb-6 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-accent-primary"></span>
@@ -378,11 +591,23 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Bank Name</label>
-                <input type="text" className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all" placeholder="e.g. State Bank of India" onChange={(e) => handleInputChange('bankDetails.bankName', e.target.value)} />
+                <input
+                  type="text"
+                  className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all"
+                  placeholder="e.g. State Bank of India"
+                  value={getFieldValue('bankDetails.bankName')}
+                  onChange={(e) => handleInputChange('bankDetails.bankName', e.target.value)}
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Branch Name</label>
-                <input type="text" className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all" placeholder="e.g. Andheri East" onChange={(e) => handleInputChange('bankDetails.branch', e.target.value)} />
+                <input
+                  type="text"
+                  className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all"
+                  placeholder="e.g. Andheri East"
+                  value={getFieldValue('bankDetails.branch')}
+                  onChange={(e) => handleInputChange('bankDetails.branch', e.target.value)}
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Account Number <span className="text-red-400">*</span></label>
@@ -390,6 +615,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                   type="text"
                   className={inputClass('bankDetails.accountNo')}
                   placeholder="Enter 12-16 digit account number"
+                  value={getFieldValue('bankDetails.accountNo')}
                   onChange={(e) => handleInputChange('bankDetails.accountNo', e.target.value)}
                 />
                 {fieldError('bankDetails.accountNo')}
@@ -400,6 +626,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                   type="text"
                   className={inputClass('bankDetails.ifscCode')}
                   placeholder="e.g. SBIN0001234"
+                  value={getFieldValue('bankDetails.ifscCode')}
                   onChange={(e) => handleInputChange('bankDetails.ifscCode', e.target.value)}
                 />
                 {fieldError('bankDetails.ifscCode')}
@@ -429,7 +656,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
               onClick={() => {
                 if (!validate()) return;
                 exportLaborerToExcel(formData, false);
-                alert("UI Demo: Data captured successfully and Excel receipt exported! GR number would be generated in production.");
+                alert('UI Demo: Data captured successfully and Excel receipt exported! GR number would be generated in production.');
                 onClose();
               }}
               className="bg-accent-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-accent-primary/20 hover:bg-accent-secondary hover:-translate-y-0.5 transition-all"
@@ -438,6 +665,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );
