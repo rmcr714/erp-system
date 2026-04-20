@@ -47,15 +47,32 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
 
   if (!isOpen) return null;
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // ── Clear Form ───────────────────────────────────────────────────────────
 
-  const handleInputChange = (field: string, value: any) => {
-    setErrors(prev => { const c = new Set(prev); c.delete(field); return c; });
+  const clearForm = () => {
+    setFormData(EMPTY_FORM);
+    setErrors(new Set());
+    setScanState('idle');
+    setScanMessage('');
+    setScanPreview(null);
+    if (scanInputRef.current) scanInputRef.current.value = '';
+  };
+
+  const handleInputChange = (field: string, value: unknown) => {
+    setErrors(prev => {
+      const next = new Set(prev);
+      next.delete(field);
+      return next;
+    });
+
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setFormData(prev => ({
         ...prev,
-        [parent]: { ...(prev[parent as keyof Laborer] as any), [child]: value }
+        [parent]: {
+          ...(prev[parent as keyof Laborer] as Record<string, unknown> | undefined),
+          [child]: value,
+        },
       }));
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
@@ -650,7 +667,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
 
           <div className="flex gap-4">
             <button
-              onClick={onClose}
+              onClick={clearForm}
               className="px-6 py-3 rounded-xl font-semibold text-text-secondary hover:text-text-primary transition-colors"
             >
               Discard
