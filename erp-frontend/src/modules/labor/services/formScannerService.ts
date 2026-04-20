@@ -10,6 +10,15 @@ Carefully analyze every part of the image and extract all readable fields.
 STRICT RULES:
 - Return ONLY valid JSON. No markdown, no explanation, no code fences.
 - Omit any field you cannot clearly read — do NOT guess.
+- Use the printed label names on the form to map fields exactly:
+  - Employer Name -> employerName
+  - Site Address / Active Project Site -> siteAddress
+  - Contact No / Contact Number -> contactNo
+  - Date of Birth -> dateOfBirth
+  - Date of joining -> dateOfJoining
+  - Permanent Address -> permanentAddress
+- If the form shows separate Employer Name and Site Address values, assign them to employerName and siteAddress respectively. Do not merge the project site into employerName.
+- If the employer name is a short industry label like "Civil" and the next text is a project location such as "Ajmera Manhattan", keep employerName="Civil" and siteAddress="Ajmera Manhattan".
 - For dates: the form uses DD/MM/YYYY or DD/MM/YY format. Convert ALL dates to YYYY-MM-DD. Example: "05/03/1990" → "1990-03-05", "15/04/26" → "2026-04-15".
 - For designation: if the form says "Labour", "Labor", or "Labourer" map it to "Unskilled". Other valid values: "Carpenter", "Steel fitter", "Block mason", "Plaster mason", "Other".
 - For permanent address: the form often writes city, state and pincode on a single line (e.g. "Raigarh, Chhattisgarh, 496450"). Parse them into separate fields: line = city/village/street, state = full state name, pincode = 6-digit number.

@@ -107,7 +107,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
       });
 
       setScanState('success');
-      setScanMessage(`✓ ${count} field${count !== 1 ? 's' : ''} auto-filled from the scanned form. Please review and correct if needed.`);
+      setScanMessage(`✓ ${count} field${count !== 1 ? 's' : ''} auto-filled from the scanned form.`);
     } catch (err: any) {
       setScanState('error');
       setScanMessage(err.message || 'Something went wrong. Please try again or fill manually.');
@@ -231,6 +231,9 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-emerald-400 text-sm mb-0.5">Scan Complete</p>
                     <p className="text-text-secondary text-xs leading-relaxed">{scanMessage}</p>
+                    <p className="mt-2 text-red-300 text-[11px] font-semibold uppercase tracking-[0.2em]">
+                      Please review all auto-filled values before saving.
+                    </p>
                   </div>
                   <button
                     onClick={resetScanner}
