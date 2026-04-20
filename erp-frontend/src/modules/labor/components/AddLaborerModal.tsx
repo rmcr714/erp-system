@@ -305,6 +305,16 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
+                <label className="text-sm font-medium text-text-secondary">GR Number</label>
+                <input
+                  type="text"
+                  className={inputClass('grNo')}
+                  placeholder="e.g. 487"
+                  value={getFieldValue('grNo')}
+                  onChange={(e) => handleInputChange('grNo', e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Full Name <span className="text-red-400">*</span></label>
                 <input
                   type="text"

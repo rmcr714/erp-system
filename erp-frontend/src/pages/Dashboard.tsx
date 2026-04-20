@@ -1,88 +1,74 @@
-import React, { useState, useEffect } from 'react';
-import type { Laborer } from '../modules/labor/types/laborer';
-import { laborService } from '../modules/labor/services/laborService';
+import React, { useState } from 'react';
 import Sidebar from '../components/common/Sidebar';
 import StatGrid from '../components/common/StatGrid';
-import LaborerTable from '../modules/labor/components/LaborerTable';
-import AddLaborerModal from '../modules/labor/components/AddLaborerModal';
-import ViewLaborerModal from '../modules/labor/components/ViewLaborerModal';
 
 const Dashboard: React.FC = () => {
-  const [laborers, setLaborers] = useState<Laborer[]>([]);
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedLaborer, setSelectedLaborer] = useState<Laborer | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const data = await laborService.getAllLaborers(search);
-        setLaborers(data);
-      } catch (err) {
-        console.error("Error fetching laborers:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const debounceTimer = setTimeout(fetchData, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [search]);
-
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <div className="flex h-screen w-screen font-inter bg-bg-main">
-      <Sidebar />
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <Sidebar currentPage="dashboard" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className="flex-1 p-10 overflow-y-auto flex flex-col gap-8">
         <header className="flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold mb-2 tracking-tight text-text-primary">Laborer Directory</h1>
-            <p className="text-text-secondary text-lg">Manage your workforce across all active project sites.</p>
-          </div>
-          <button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="bg-accent-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-accent-secondary hover:-translate-y-0.5 shadow-lg shadow-accent-primary/20 transition-all duration-200"
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+            aria-label="Toggle menu"
           >
-            + Add Laborer
+            <div className="w-6 h-6 flex flex-col justify-center items-center">
+              <span className={`block w-5 h-0.5 bg-text-primary transition-all duration-300 ${sidebarOpen ? 'rotate-45 translate-y-1' : '-translate-y-1'}`} />
+              <span className={`block w-5 h-0.5 bg-text-primary transition-all duration-300 ${sidebarOpen ? 'opacity-0' : 'opacity-100'}`} />
+              <span className={`block w-5 h-0.5 bg-text-primary transition-all duration-300 ${sidebarOpen ? '-rotate-45 -translate-y-1' : 'translate-y-1'}`} />
+            </div>
           </button>
+
+          <div className="flex-1 lg:flex-none">
+            <h1 className="text-4xl font-bold mb-2 tracking-tight text-text-primary">Dashboard</h1>
+            <p className="text-text-secondary text-lg">Welcome back! Here's an overview of your ERP system.</p>
+          </div>
         </header>
 
         <StatGrid 
-          totalLaborers={search ? laborers.length : '3,000'} 
+          totalLaborers="3,000" 
           activeToday="2,842" 
           dailyPayroll="₹12.4L" 
         />
 
-        <div className="flex gap-4 items-center">
-          <div className="relative flex-1 max-w-md">
-            <input 
-              type="text" 
-              className="w-full bg-bg-card border border-border-subtle p-4 pl-12 rounded-xl text-text-primary outline-none focus:border-accent-primary focus:ring-4 focus:ring-accent-primary/10 transition-all duration-200 shadow-xl" 
-              placeholder="Search by name, GR No, or designation..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary opacity-50">🔍</span>
+        <section className="bg-bg-card border border-border-subtle rounded-2xl p-8">
+          <h2 className="text-2xl font-bold text-text-primary mb-4">Quick Links</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="#laborers" className="p-6 rounded-xl bg-white/5 hover:bg-white/10 border border-border-subtle transition-all hover:-translate-y-1">
+              <div className="text-3xl mb-2">👷</div>
+              <h3 className="font-bold text-text-primary">Manage Laborers</h3>
+              <p className="text-text-secondary text-sm mt-1">Add, view, and manage all laborers</p>
+            </a>
+            <a href="#attendance" className="p-6 rounded-xl bg-white/5 hover:bg-white/10 border border-border-subtle transition-all hover:-translate-y-1">
+              <div className="text-3xl mb-2">📅</div>
+              <h3 className="font-bold text-text-primary">Attendance</h3>
+              <p className="text-text-secondary text-sm mt-1">Track daily attendance records</p>
+            </a>
+            <a href="#payroll" className="p-6 rounded-xl bg-white/5 hover:bg-white/10 border border-border-subtle transition-all hover:-translate-y-1">
+              <div className="text-3xl mb-2">💰</div>
+              <h3 className="font-bold text-text-primary">Payroll</h3>
+              <p className="text-text-secondary text-sm mt-1">Manage payments and salary</p>
+            </a>
+            <a href="#settings" className="p-6 rounded-xl bg-white/5 hover:bg-white/10 border border-border-subtle transition-all hover:-translate-y-1">
+              <div className="text-3xl mb-2">⚙️</div>
+              <h3 className="font-bold text-text-primary">Settings</h3>
+              <p className="text-text-secondary text-sm mt-1">Configure system settings</p>
+            </a>
           </div>
-        </div>
-
-        <LaborerTable 
-          laborers={laborers} 
-          loading={loading} 
-          onViewProfile={setSelectedLaborer}
-        />
-
-        <AddLaborerModal 
-          isOpen={isAddModalOpen} 
-          onClose={() => setIsAddModalOpen(false)} 
-        />
-
-        <ViewLaborerModal 
-          laborer={selectedLaborer} 
-          onClose={() => setSelectedLaborer(null)} 
-        />
+        </section>
       </main>
     </div>
   );
