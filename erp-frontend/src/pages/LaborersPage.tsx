@@ -11,6 +11,8 @@ interface SearchCriteria {
   grNo: string;
   designation: string;
   idProofNumber: string;
+  contactNo: string;
+  onlyActive: boolean;
 }
 
 const INDIAN_DESIGNATIONS = [
@@ -28,7 +30,9 @@ const LaborersPage: React.FC = () => {
     name: '',
     grNo: '',
     designation: '',
-    idProofNumber: ''
+    idProofNumber: '',
+    contactNo: '',
+    onlyActive: true
   });
   const [loading, setLoading] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -56,23 +60,43 @@ const LaborersPage: React.FC = () => {
     }
   }, [initialLoad]);
 
-  const handleSearchChange = (field: keyof SearchCriteria, value: string) => {
+  const handleSearchChange = (field: keyof SearchCriteria, value: string | boolean) => {
     setSearchCriteria(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
+  const performSearch = async (criteria: SearchCriteria) => {
+    setLoading(true);
+    try {
+      const data = await laborService.getAllLaborers(criteria);
+      setLaborers(data);
+    } catch (err) {
+      console.error("Error fetching laborers:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const clearFilters = () => {
-    setSearchCriteria({
+    const defaultCriteria = {
       name: '',
       grNo: '',
       designation: '',
-      idProofNumber: ''
-    });
+      idProofNumber: '',
+      contactNo: '',
+      onlyActive: true
+    };
+    setSearchCriteria(defaultCriteria);
+    performSearch(defaultCriteria);
   };
 
-  const hasActiveFilters = Object.values(searchCriteria).some(v => v !== '');
+  const hasActiveFilters = Object.entries(searchCriteria).some(([key, v]) => {
+    if (key === 'onlyActive') return v === false; 
+    if (key === 'designation') return v !== ''; // This includes '*' as an active filter
+    return v !== '';
+  });
 
   return (
     <div className="flex h-screen w-screen font-inter bg-bg-main">
@@ -128,7 +152,7 @@ const LaborersPage: React.FC = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             {/* Search by Name */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-text-secondary uppercase tracking-tight">By Name</label>
@@ -194,6 +218,40 @@ const LaborersPage: React.FC = () => {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary opacity-50">🪪</span>
               </div>
             </div>
+
+            {/* Search by Phone Number */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-tight">By Phone Number</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  className="w-full bg-bg-card border border-border-subtle p-3 pl-10 rounded-lg text-text-primary outline-none focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20 transition-all"
+                  placeholder="e.g. 9876..."
+                  value={searchCriteria.contactNo}
+                  onChange={(e) => handleSearchChange('contactNo', e.target.value)}
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary opacity-50">📞</span>
+              </div>
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex items-center gap-3 pt-6 lg:pt-8">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={searchCriteria.onlyActive}
+                    onChange={(e) => handleSearchChange('onlyActive', e.target.checked)}
+                  />
+                  <div className={`w-12 h-6 rounded-full transition-colors ${searchCriteria.onlyActive ? 'bg-accent-primary' : 'bg-white/10'}`}></div>
+                  <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${searchCriteria.onlyActive ? 'translate-x-6' : ''}`}></div>
+                </div>
+                <span className="text-xs font-bold uppercase tracking-widest text-text-secondary group-hover:text-text-primary transition-colors">
+                  {searchCriteria.onlyActive ? 'Active Only' : 'Show All Workers'}
+                </span>
+              </label>
+            </div>
           </div>
 
           {/* Results Counter & Search Button */}
@@ -209,20 +267,7 @@ const LaborersPage: React.FC = () => {
               )}
             </p>
             <button
-              onClick={() => {
-                const fetchData = async () => {
-                  setLoading(true);
-                  try {
-                    const data = await laborService.getAllLaborers(searchCriteria);
-                    setLaborers(data);
-                  } catch (err) {
-                    console.error("Error fetching laborers:", err);
-                  } finally {
-                    setLoading(false);
-                  }
-                };
-                fetchData();
-              }}
+              onClick={() => performSearch(searchCriteria)}
               disabled={!hasActiveFilters}
               className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all active:scale-95 ${
                 hasActiveFilters

@@ -32,6 +32,7 @@ public class LaborerDTO {
     private BankDetailsDTO bankDetails;
     private LaborerStatus status;
     private String photoUrl;
+    private String s3Url;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

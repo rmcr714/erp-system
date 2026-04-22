@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import type { Laborer } from '../types/laborer';
 import { exportLaborerToExcel } from '../utils/excelExport';
 import { scanLaborForm, countExtractedFields } from '../services/formScannerService';
+import { laborService } from '../services/laborService';
+import toast from 'react-hot-toast';
 
 interface AddLaborerModalProps {
   isOpen: boolean;
@@ -43,6 +45,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [scanMessage, setScanMessage] = useState('');
   const [scanPreview, setScanPreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const scanInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -462,6 +465,16 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                   onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
                 />
               </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-text-secondary">Join By Reference</label>
+                <input
+                  type="text"
+                  className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all"
+                  placeholder="Referral Name / Contractor"
+                  value={getFieldValue('joinByReference')}
+                  onChange={(e) => handleInputChange('joinByReference', e.target.value)}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-text-secondary">Height</label>
@@ -680,15 +693,33 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
               Discard
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (!validate()) return;
-                exportLaborerToExcel(formData, false);
-                alert('UI Demo: Data captured successfully and Excel receipt exported! GR number would be generated in production.');
-                onClose();
+                setIsSubmitting(true);
+                try {
+                  const saved = await laborService.addLaborer(formData);
+                  exportLaborerToExcel(saved, false);
+                  toast.success(`Laborer registered successfully! (GR: ${saved.grNo})`, {
+                    duration: 4000,
+                  });
+                  onClose();
+                  // Wait a bit so they can see the success toast before reload
+                  setTimeout(() => window.location.reload(), 1500);
+                } catch (err: any) {
+                  console.error("Submission error:", err);
+                  toast.error(err.message || 'Failed to register laborer. Please check if GR No already exists.', {
+                    duration: 5000,
+                  });
+                } finally {
+                  setIsSubmitting(false);
+                }
               }}
-              className="bg-accent-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-accent-primary/20 hover:bg-accent-secondary hover:-translate-y-0.5 transition-all"
+              disabled={isSubmitting}
+              className={`bg-accent-primary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-accent-primary/20 hover:bg-accent-secondary hover:-translate-y-0.5 transition-all ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
-              Register Laborer
+              {isSubmitting ? 'Registering...' : 'Register Laborer'}
             </button>
           </div>
         </div>

@@ -7,6 +7,8 @@ interface SearchCriteria {
   grNo?: string;
   designation?: string;
   idProofNumber?: string;
+  contactNo?: string;
+  onlyActive?: boolean;
 }
 
 export const laborService = {
@@ -25,10 +27,9 @@ export const laborService = {
       
       if (searchCriteria.name) params.append('name', searchCriteria.name);
       if (searchCriteria.grNo) params.append('grNo', searchCriteria.grNo);
-      // Only append designation if it's not the wildcard "all designations" value
-      if (searchCriteria.designation && searchCriteria.designation !== '*') {
-        params.append('designation', searchCriteria.designation);
-      }
+      if (searchCriteria.designation && searchCriteria.designation !== '*') params.append('designation', searchCriteria.designation);
+      if (searchCriteria.contactNo) params.append('contactNo', searchCriteria.contactNo);
+      if (searchCriteria.onlyActive) params.append('onlyActive', 'true');
       if (searchCriteria.idProofNumber) params.append('idProofNumber', searchCriteria.idProofNumber);
 
       const queryString = params.toString();
@@ -39,6 +40,23 @@ export const laborService = {
     if (!response.ok) {
       throw new Error('Failed to fetch laborers');
     }
+    return response.json();
+  },
+
+  async addLaborer(laborer: Partial<Laborer>): Promise<Laborer> {
+    const response = await fetch(API_BASE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(laborer),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to register laborer');
+    }
+
     return response.json();
   }
 };
