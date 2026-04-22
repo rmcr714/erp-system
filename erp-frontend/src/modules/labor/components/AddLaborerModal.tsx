@@ -70,7 +70,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...(prev[parent as keyof Laborer] as Record<string, unknown> | undefined),
+          ...(prev[parent as keyof Laborer] as any),
           [child]: value,
         },
       }));
@@ -114,7 +114,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
         for (const [key, value] of Object.entries(extracted)) {
           if (value !== null && value !== undefined) {
             if (typeof value === 'object' && !Array.isArray(value)) {
-              next[key] = { ...(prev[key as keyof Laborer] as object), ...value };
+              next[key] = { ...(prev[key as keyof Laborer] as any), ...value };
             } else {
               next[key] = value;
             }
