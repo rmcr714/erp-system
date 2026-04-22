@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,7 +25,8 @@ public class LaborerServiceImpl implements LaborerService {
     }
 
     @Override
-    public List<LaborerDTO> searchLaborers(String fullName, String grNo, String designation, String contactNo, boolean onlyActive) {
+    public List<LaborerDTO> searchLaborers(String fullName, String grNo, String designation, String contactNo,
+            boolean onlyActive) {
         return laborerRepository.findLaborers(fullName, grNo, designation, contactNo, onlyActive).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
@@ -35,7 +35,7 @@ public class LaborerServiceImpl implements LaborerService {
     @Override
     public LaborerDTO addLaborer(LaborerDTO laborerDTO) {
         String grNo = laborerDTO.getGrNo();
-        
+
         // GR No is now a required field
         if (grNo == null || grNo.trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "GR Number is required.");
@@ -105,7 +105,8 @@ public class LaborerServiceImpl implements LaborerService {
 
     // Helper mapping methods
     private LaborerDTO.AddressDTO mapAddressToDTO(Laborer.Address address) {
-        if (address == null) return null;
+        if (address == null)
+            return null;
         return LaborerDTO.AddressDTO.builder()
                 .line(address.getLine())
                 .state(address.getState())
@@ -114,7 +115,8 @@ public class LaborerServiceImpl implements LaborerService {
     }
 
     private Laborer.Address mapAddressToEntity(LaborerDTO.AddressDTO dto) {
-        if (dto == null) return null;
+        if (dto == null)
+            return null;
         return Laborer.Address.builder()
                 .line(dto.getLine())
                 .state(dto.getState())
@@ -123,7 +125,8 @@ public class LaborerServiceImpl implements LaborerService {
     }
 
     private LaborerDTO.IdProofDTO mapIdProofToDTO(Laborer.IdProof idProof) {
-        if (idProof == null) return null;
+        if (idProof == null)
+            return null;
         return LaborerDTO.IdProofDTO.builder()
                 .type(idProof.getType())
                 .idNumber(idProof.getIdNumber())
@@ -131,7 +134,8 @@ public class LaborerServiceImpl implements LaborerService {
     }
 
     private Laborer.IdProof mapIdProofToEntity(LaborerDTO.IdProofDTO dto) {
-        if (dto == null) return null;
+        if (dto == null)
+            return null;
         return Laborer.IdProof.builder()
                 .type(dto.getType())
                 .idNumber(dto.getIdNumber())
@@ -139,7 +143,8 @@ public class LaborerServiceImpl implements LaborerService {
     }
 
     private LaborerDTO.BankDetailsDTO mapBankDetailsToDTO(Laborer.BankDetails bankDetails) {
-        if (bankDetails == null) return null;
+        if (bankDetails == null)
+            return null;
         return LaborerDTO.BankDetailsDTO.builder()
                 .bankName(bankDetails.getBankName())
                 .branch(bankDetails.getBranch())
@@ -149,7 +154,8 @@ public class LaborerServiceImpl implements LaborerService {
     }
 
     private Laborer.BankDetails mapBankDetailsToEntity(LaborerDTO.BankDetailsDTO dto) {
-        if (dto == null) return null;
+        if (dto == null)
+            return null;
         return Laborer.BankDetails.builder()
                 .bankName(dto.getBankName())
                 .branch(dto.getBranch())
