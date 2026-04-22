@@ -20,7 +20,6 @@ export interface Laborer {
   grNo: string;
   fullName: string;
   designation: 'Carpenter' | 'Steel fitter' | 'Block mason' | 'Plaster mason' | 'Unskilled' | 'Other';
-  designationDetail?: string;
   employerName: string;
   siteAddress: string;
   permanentAddress: Address;

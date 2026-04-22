@@ -89,10 +89,18 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
 
   const validate = (): boolean => {
     const newErrors = new Set<string>();
+    
+    // Standard required fields
     REQUIRED_FIELDS.forEach(field => {
       const value = getFieldValue(field);
       if (!value || String(value).trim() === '') newErrors.add(field);
     });
+
+    // Conditional: PF Number is required if PF Account Holder is checked
+    if (formData.hasPf && (!formData.pfNo || formData.pfNo.trim() === '')) {
+      newErrors.add('pfNo');
+    }
+
     setErrors(newErrors);
     return newErrors.size === 0;
   };
@@ -341,18 +349,6 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                 </select>
                 {fieldError('designation')}
               </div>
-              {formData.designation === 'Other' && (
-                <div className="space-y-1 md:col-span-2 animate-in fade-in slide-in-from-top-2">
-                  <label className="text-sm font-medium text-text-secondary">Specify Designation</label>
-                  <input
-                    type="text"
-                    className={inputClass('designationDetail')}
-                    placeholder="Enter manual designation..."
-                    value={getFieldValue('designationDetail')}
-                    onChange={(e) => handleInputChange('designationDetail', e.target.value)}
-                  />
-                </div>
-              )}
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Employer Name <span className="text-red-400">*</span></label>
                 <input
@@ -418,7 +414,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                       placeholder="Pincode"
                       maxLength={6}
                       value={getFieldValue('permanentAddress.pincode')}
-                      onChange={(e) => handleInputChange('permanentAddress.pincode', e.target.value)}
+                      onChange={(e) => handleInputChange('permanentAddress.pincode', e.target.value.replace(/[^0-9]/g, ''))}
                     />
                     {fieldError('permanentAddress.pincode')}
                   </div>
@@ -431,9 +427,9 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                 <input
                   type="text"
                   className={inputClass('contactNo')}
-                  placeholder="+91-0000000000"
+                  placeholder="10-digit number"
                   value={getFieldValue('contactNo')}
-                  onChange={(e) => handleInputChange('contactNo', e.target.value)}
+                  onChange={(e) => handleInputChange('contactNo', e.target.value.replace(/[^0-9]/g, ''))}
                 />
                 {fieldError('contactNo')}
               </div>
@@ -574,14 +570,15 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                 </div>
                 {formData.hasPf && (
                   <div className="space-y-2 animate-in fade-in zoom-in-95">
-                    <label className="text-sm font-medium text-text-secondary">PF Number</label>
+                    <label className="text-sm font-medium text-text-secondary">PF Number <span className="text-red-400">*</span></label>
                     <input
                       type="text"
-                      className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all"
+                      className={inputClass('pfNo')}
                       placeholder="Enter PF No"
                       value={getFieldValue('pfNo')}
                       onChange={(e) => handleInputChange('pfNo', e.target.value)}
                     />
+                    {fieldError('pfNo')}
                   </div>
                 )}
               </div>
@@ -646,7 +643,7 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
                   className={inputClass('bankDetails.accountNo')}
                   placeholder="Enter 12-16 digit account number"
                   value={getFieldValue('bankDetails.accountNo')}
-                  onChange={(e) => handleInputChange('bankDetails.accountNo', e.target.value)}
+                  onChange={(e) => handleInputChange('bankDetails.accountNo', e.target.value.replace(/[^0-9]/g, ''))}
                 />
                 {fieldError('bankDetails.accountNo')}
               </div>

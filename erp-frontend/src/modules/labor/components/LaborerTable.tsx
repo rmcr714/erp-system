@@ -31,7 +31,7 @@ const LaborerTable: React.FC<LaborerTableProps> = ({ laborers, loading, onViewPr
                 <td className="p-5 font-bold text-accent-primary">{worker.grNo}</td>
                 <td className="p-5 font-medium">{worker.fullName}</td>
                 <td className="p-5 text-text-secondary whitespace-nowrap">
-                  {worker.designation === 'Other' ? worker.designationDetail : worker.designation}
+                  {worker.designation}
                 </td>
                 <td className="p-5">{worker.siteAddress}</td>
                 <td className="p-5">

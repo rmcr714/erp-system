@@ -40,21 +40,21 @@ public class MockLaborService {
     @PostConstruct
     public void init() {
         // Seed some professional data based on the physical forms
-        addLaborer("Hemant Bhardwaj", "Unskilled", null, "Ajmera Manhattan", LaborerStatus.ACTIVE, "AADHAR", "1234-5678-9012", "Maharashtra");
-        addLaborer("Amit Singh", "Carpenter", null, "Skyline Towers", LaborerStatus.ACTIVE, "PAN", "ABCDE1234F", "Delhi");
-        addLaborer("Rajesh Kumar", "Steel fitter", null, "Delta Heights", LaborerStatus.ACTIVE, "AADHAR", "9876-5432-1098", "Uttar Pradesh");
-        addLaborer("Vijay Sharma", "Block mason", null, "Metro Plaza", LaborerStatus.ON_LEAVE, "PAN", "FGHIJ5678K", "Bihar");
-        addLaborer("Suresh Gupta", "Other", "Painter", "Central Station", LaborerStatus.ACTIVE, "ELECTION_CARD", "XYZ987654", "Rajasthan");
+        addLaborer("Hemant Bhardwaj", "Unskilled", "Ajmera Manhattan", LaborerStatus.ACTIVE, "AADHAR", "1234-5678-9012", "Maharashtra");
+        addLaborer("Amit Singh", "Carpenter", "Skyline Towers", LaborerStatus.ACTIVE, "PAN", "ABCDE1234F", "Delhi");
+        addLaborer("Rajesh Kumar", "Steel fitter", "Delta Heights", LaborerStatus.ACTIVE, "AADHAR", "9876-5432-1098", "Uttar Pradesh");
+        addLaborer("Vijay Sharma", "Block mason", "Metro Plaza", LaborerStatus.ON_LEAVE, "PAN", "FGHIJ5678K", "Bihar");
+        addLaborer("Suresh Gupta", "Other", "Central Station", LaborerStatus.ACTIVE, "ELECTION_CARD", "XYZ987654", "Rajasthan");
         
         // Add more structured mock data to reach 50 entries
         String[] states = {"Maharashtra", "Gujarat", "Karnataka", "Tamil Nadu", "Uttar Pradesh"};
         for (int i = 1; i <= 45; i++) {
             String designation = List.of("Carpenter", "Steel fitter", "Block mason", "Plaster mason", "Unskilled").get(i % 5);
-            addLaborer("Worker " + i, designation, null, "Green Valley", LaborerStatus.ACTIVE, "AADHAR", "4000-0000-00" + i, states[i % 5]);
+            addLaborer("Worker " + i, designation, "Green Valley", LaborerStatus.ACTIVE, "AADHAR", "4000-0000-00" + i, states[i % 5]);
         }
     }
 
-    private void addLaborer(String name, String designation, String detail, String site, LaborerStatus status, String idType, String idNo, String state) {
+    private void addLaborer(String name, String designation, String site, LaborerStatus status, String idType, String idNo, String state) {
         String prefix = prefixes.getOrDefault(designation, "OT");
         int count = counters.get(designation).getAndIncrement();
         String grNo = prefix + String.format("%03d", count);
@@ -72,7 +72,6 @@ public class MockLaborService {
                 .grNo(grNo)
                 .fullName(name)
                 .designation(designation)
-                .designationDetail(detail)
                 .siteAddress(site)
                 .employerName("Civic Construction Ltd")
                 .permanentAddress(address)
@@ -102,8 +101,7 @@ public class MockLaborService {
         return laborers.stream()
                 .filter(l -> l.getFullName().toLowerCase().contains(lowerQuery) || 
                              l.getGrNo().toLowerCase().contains(lowerQuery) ||
-                             l.getDesignation().toLowerCase().contains(lowerQuery) ||
-                             (l.getDesignationDetail() != null && l.getDesignationDetail().toLowerCase().contains(lowerQuery)))
+                             l.getDesignation().toLowerCase().contains(lowerQuery))
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -123,7 +121,6 @@ public class MockLaborService {
                 .grNo(laborer.getGrNo())
                 .fullName(laborer.getFullName())
                 .designation(laborer.getDesignation())
-                .designationDetail(laborer.getDesignationDetail())
                 .employerName(laborer.getEmployerName())
                 .siteAddress(laborer.getSiteAddress())
                 .permanentAddress(addressDTO)

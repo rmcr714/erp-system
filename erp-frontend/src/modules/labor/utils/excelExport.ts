@@ -6,7 +6,7 @@ export const exportLaborerToExcel = (laborer: Partial<Laborer>, isDraft: boolean
   const rowData = [
     {
       "Full Name": laborer.fullName || 'N/A',
-      "Designation": laborer.designation === 'Other' ? laborer.designationDetail : (laborer.designation || 'N/A'),
+      "Designation": laborer.designation || 'N/A',
       "Employer Name": laborer.employerName || 'N/A',
       "Active Project Site": laborer.siteAddress || 'N/A',
       "Address Line": laborer.permanentAddress?.line || 'N/A',

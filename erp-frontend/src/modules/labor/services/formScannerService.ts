@@ -33,7 +33,6 @@ Return this exact JSON structure (omit any key where the value is not readable):
   "grNo": "string",
   "fullName": "string",
   "designation": "Carpenter | Steel fitter | Block mason | Plaster mason | Unskilled | Other",
-  "designationDetail": "string (only if designation is Other)",
   "employerName": "string",
   "siteAddress": "string",
   "contactNo": "string",

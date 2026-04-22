@@ -20,7 +20,6 @@ public class Laborer {
     // Core Details
     private String fullName;
     private String designation; // Carpenter, Steel fitter, Block mason, Plaster mason, Unskilled, Other
-    private String designationDetail; // Manual entry if designation is "Other"
     private String employerName;
     private String siteAddress;
     

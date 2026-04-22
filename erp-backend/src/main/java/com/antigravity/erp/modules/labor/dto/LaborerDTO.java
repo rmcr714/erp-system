@@ -16,7 +16,6 @@ public class LaborerDTO {
     private String grNo;
     private String fullName;
     private String designation;
-    private String designationDetail;
     private String employerName;
     private String siteAddress;
     private AddressDTO permanentAddress;

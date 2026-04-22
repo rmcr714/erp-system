@@ -31,7 +31,7 @@ const ViewLaborerModal: React.FC<ViewLaborerModalProps> = ({ laborer, onClose })
             </div>
             <div className="mb-4">
               <h2 className="text-3xl font-bold font-outfit text-text-primary leading-tight">{laborer.fullName}</h2>
-              <p className="text-accent-primary font-bold tracking-widest text-xs uppercase">{laborer.grNo} • {laborer.designation === 'Other' ? laborer.designationDetail : laborer.designation}</p>
+              <p className="text-accent-primary font-bold tracking-widest text-xs uppercase">{laborer.grNo} • {laborer.designation}</p>
             </div>
           </div>
         </div>
@@ -49,7 +49,7 @@ const ViewLaborerModal: React.FC<ViewLaborerModalProps> = ({ laborer, onClose })
             </div>
             <div className="space-y-1 col-span-2">
               <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">Permanent Address</p>
-              <p className="text-text-primary font-medium">{laborer.permanentAddress || 'Not provided'}</p>
+              <p className="text-text-primary font-medium">{laborer.permanentAddress ? `${laborer.permanentAddress.line}, ${laborer.permanentAddress.state} - ${laborer.permanentAddress.pincode}` : 'Not provided'}</p>
             </div>
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">Contact Info</p>
