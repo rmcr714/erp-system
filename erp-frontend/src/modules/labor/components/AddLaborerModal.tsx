@@ -21,7 +21,7 @@ const INDIAN_STATES = [
 ];
 
 const REQUIRED_FIELDS = [
-  'fullName', 'designation', 'employerName', 'siteAddress',
+  'grNo', 'fullName', 'designation', 'employerName', 'siteAddress',
   'contactNo',
   'permanentAddress.line', 'permanentAddress.state', 'permanentAddress.pincode',
   'idProof.idNumber',

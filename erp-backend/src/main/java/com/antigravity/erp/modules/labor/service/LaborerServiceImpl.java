@@ -18,15 +18,6 @@ public class LaborerServiceImpl implements LaborerService {
     @Autowired
     private LaborerRepository laborerRepository;
 
-    private final Map<String, String> prefixes = Map.of(
-        "Carpenter", "CA",
-        "Steel fitter", "SF",
-        "Block mason", "BM",
-        "Plaster mason", "PM",
-        "Unskilled", "US",
-        "Other", "OT"
-    );
-
     @Override
     public List<LaborerDTO> getAllLaborers() {
         return laborerRepository.findAll().stream()
@@ -43,31 +34,19 @@ public class LaborerServiceImpl implements LaborerService {
 
     @Override
     public LaborerDTO addLaborer(LaborerDTO laborerDTO) {
-        // If GR No is provided manually, check for duplicates
-        if (laborerDTO.getGrNo() != null && !laborerDTO.getGrNo().isEmpty()) {
-            if (laborerRepository.existsById(laborerDTO.getGrNo())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Laborer with GR No " + laborerDTO.getGrNo() + " already exists.");
-            }
+        String grNo = laborerDTO.getGrNo();
+        
+        // GR No is now a required field
+        if (grNo == null || grNo.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "GR Number is required.");
+        }
+
+        // Check for duplicates
+        if (laborerRepository.existsById(grNo)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Laborer with GR No " + grNo + " already exists.");
         }
 
         Laborer laborer = mapToEntity(laborerDTO);
-        
-        // Generate GR No if not present
-        if (laborer.getGrNo() == null || laborer.getGrNo().isEmpty()) {
-            String prefix = prefixes.getOrDefault(laborer.getDesignation(), "OT");
-            long count = laborerRepository.findAll().stream()
-                    .filter(l -> l.getDesignation().equals(laborer.getDesignation()))
-                    .count();
-            
-            // Ensure generated GR doesn't conflict (though unlikely with this logic)
-            String generatedGr = prefix + String.format("%03d", count + 1);
-            while (laborerRepository.existsById(generatedGr)) {
-                count++;
-                generatedGr = prefix + String.format("%03d", count + 1);
-            }
-            laborer.setGrNo(generatedGr);
-        }
-
         Laborer savedLaborer = laborerRepository.save(laborer);
         return mapToDTO(savedLaborer);
     }
