@@ -5,9 +5,10 @@ interface LaborerTableProps {
   laborers: Laborer[];
   loading: boolean;
   onViewProfile: (laborer: Laborer) => void;
+  onEditLaborer: (laborer: Laborer) => void;
 }
 
-const LaborerTable: React.FC<LaborerTableProps> = ({ laborers, loading, onViewProfile }) => {
+const LaborerTable: React.FC<LaborerTableProps> = ({ laborers, loading, onViewProfile, onEditLaborer }) => {
   return (
     <div className="glass-card overflow-hidden border-none shadow-2xl">
       <table className="w-full text-left border-collapse">
@@ -47,12 +48,21 @@ const LaborerTable: React.FC<LaborerTableProps> = ({ laborers, loading, onViewPr
                 </td>
                 <td className="p-5 font-mono text-xs">{worker.idProof.type}: {worker.idProof.idNumber}</td>
                 <td className="p-5 text-right">
-                  <button 
-                    onClick={() => onViewProfile(worker)}
-                    className="opacity-0 group-hover:opacity-100 bg-white/5 hover:bg-white/10 text-text-primary px-4 py-2 rounded-lg text-xs font-bold transition-all border border-border-subtle"
-                  >
-                    View Details
-                  </button>
+                  <div className="flex items-center justify-end gap-2">
+                    <button 
+                      onClick={() => onEditLaborer(worker)}
+                      className="opacity-0 group-hover:opacity-100 bg-white/5 hover:bg-white/10 text-text-primary px-3 py-2 rounded-lg text-xs font-bold transition-all border border-border-subtle"
+                      title="Edit"
+                    >
+                      ✏️
+                    </button>
+                    <button 
+                      onClick={() => onViewProfile(worker)}
+                      className="opacity-0 group-hover:opacity-100 bg-white/5 hover:bg-white/10 text-text-primary px-4 py-2 rounded-lg text-xs font-bold transition-all border border-border-subtle"
+                    >
+                      View Details
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))

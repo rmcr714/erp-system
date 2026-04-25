@@ -51,6 +51,37 @@ public class LaborerServiceImpl implements LaborerService {
         return mapToDTO(savedLaborer);
     }
 
+    @Override
+    public LaborerDTO updateLaborer(String grNo, LaborerDTO laborerDTO) {
+        Laborer existingLaborer = laborerRepository.findById(grNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
+                        "Laborer with GR No " + grNo + " not found."));
+
+        // Update fields
+        existingLaborer.setFullName(laborerDTO.getFullName());
+        existingLaborer.setDesignation(laborerDTO.getDesignation());
+        existingLaborer.setEmployerName(laborerDTO.getEmployerName());
+        existingLaborer.setSiteAddress(laborerDTO.getSiteAddress());
+        existingLaborer.setPermanentAddress(mapAddressToEntity(laborerDTO.getPermanentAddress()));
+        existingLaborer.setContactNo(laborerDTO.getContactNo());
+        existingLaborer.setDateOfBirth(laborerDTO.getDateOfBirth());
+        existingLaborer.setDateOfJoining(laborerDTO.getDateOfJoining());
+        existingLaborer.setHeight(laborerDTO.getHeight());
+        existingLaborer.setWeight(laborerDTO.getWeight());
+        existingLaborer.setBloodGroup(laborerDTO.getBloodGroup());
+        existingLaborer.setJoinByReference(laborerDTO.getJoinByReference());
+        existingLaborer.setHasPf(laborerDTO.isHasPf());
+        existingLaborer.setPfNo(laborerDTO.getPfNo());
+        existingLaborer.setIdProof(mapIdProofToEntity(laborerDTO.getIdProof()));
+        existingLaborer.setBankDetails(mapBankDetailsToEntity(laborerDTO.getBankDetails()));
+        existingLaborer.setSalaryPerDay(laborerDTO.getSalaryPerDay());
+        existingLaborer.setStatus(laborerDTO.getStatus());
+        existingLaborer.setPhotoUrl(laborerDTO.getPhotoUrl());
+
+        Laborer updatedLaborer = laborerRepository.save(existingLaborer);
+        return mapToDTO(updatedLaborer);
+    }
+
     private LaborerDTO mapToDTO(Laborer laborer) {
         return LaborerDTO.builder()
                 .grNo(laborer.getGrNo())

@@ -5,6 +5,7 @@ import Sidebar from '../components/common/Sidebar';
 import LaborerTable from '../modules/labor/components/LaborerTable';
 import AddLaborerModal from '../modules/labor/components/AddLaborerModal';
 import ViewLaborerModal from '../modules/labor/components/ViewLaborerModal';
+import EditLaborerModal from '../modules/labor/components/EditLaborerModal';
 
 interface SearchCriteria {
   name: string;
@@ -36,7 +37,9 @@ const LaborersPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedLaborer, setSelectedLaborer] = useState<Laborer | null>(null);
+  const [editingLaborer, setEditingLaborer] = useState<Laborer | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -291,6 +294,10 @@ const LaborersPage: React.FC = () => {
             laborers={paginatedLaborers} 
             loading={loading} 
             onViewProfile={setSelectedLaborer}
+            onEditLaborer={(laborer) => {
+              setEditingLaborer(laborer);
+              setIsEditModalOpen(true);
+            }}
           />
           
           {/* Pagination Controls */}
@@ -326,7 +333,25 @@ const LaborersPage: React.FC = () => {
 
         <ViewLaborerModal 
           laborer={selectedLaborer} 
-          onClose={() => setSelectedLaborer(null)} 
+          onClose={() => setSelectedLaborer(null)}
+          onEdit={(laborer) => {
+            setEditingLaborer(laborer);
+            setIsEditModalOpen(true);
+          }}
+        />
+
+        <EditLaborerModal 
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingLaborer(null);
+          }}
+          laborer={editingLaborer}
+          onSuccess={async () => {
+            // Refresh the laborers list
+            const data = await laborService.getAllLaborers(searchCriteria);
+            setLaborers(data);
+          }}
         />
       </main>
     </div>

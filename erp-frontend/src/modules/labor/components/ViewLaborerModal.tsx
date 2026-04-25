@@ -4,9 +4,10 @@ import type { Laborer } from '../types/laborer';
 interface ViewLaborerModalProps {
   laborer: Laborer | null;
   onClose: () => void;
+  onEdit: (laborer: Laborer) => void;
 }
 
-const ViewLaborerModal: React.FC<ViewLaborerModalProps> = ({ laborer, onClose }) => {
+const ViewLaborerModal: React.FC<ViewLaborerModalProps> = ({ laborer, onClose, onEdit }) => {
   if (!laborer) return null;
 
   return (
@@ -118,6 +119,7 @@ const ViewLaborerModal: React.FC<ViewLaborerModalProps> = ({ laborer, onClose })
         {/* Footer */}
         <div className="p-6 border-t border-border-subtle bg-white/5 flex gap-4">
           <button 
+            onClick={() => onEdit(laborer)}
             className="flex-1 bg-white/5 border border-border-subtle text-text-primary py-3 rounded-xl font-bold hover:bg-white/10 transition-colors"
           >
             Edit Profile

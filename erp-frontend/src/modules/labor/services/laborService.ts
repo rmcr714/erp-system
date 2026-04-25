@@ -58,5 +58,22 @@ export const laborService = {
     }
 
     return response.json();
+  },
+
+  async updateLaborer(grNo: string, laborer: Partial<Laborer>): Promise<Laborer> {
+    const response = await fetch(`${API_BASE_URL}/${grNo}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(laborer),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to update laborer');
+    }
+
+    return response.json();
   }
 };

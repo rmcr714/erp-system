@@ -41,4 +41,10 @@ public class LaborerController {
         LaborerDTO savedLaborer = laborService.addLaborer(laborerDTO);
         return ResponseEntity.ok(savedLaborer);
     }
+
+    @PutMapping("/{grNo}")
+    public ResponseEntity<LaborerDTO> updateLaborer(@PathVariable(name = "grNo") String grNo, @RequestBody LaborerDTO laborerDTO) {
+        LaborerDTO updatedLaborer = laborService.updateLaborer(grNo, laborerDTO);
+        return ResponseEntity.ok(updatedLaborer);
+    }
 }
