@@ -1,5 +1,6 @@
 import Dashboard from './pages/Dashboard';
 import LaborersPage from './pages/LaborersPage';
+import AttendancePage from './pages/attendance/AttendancePage';
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 
@@ -21,6 +22,9 @@ function App() {
   const renderPage = () => {
     if (currentPage.startsWith('laborers')) {
       return <LaborersPage />;
+    }
+    if (currentPage.startsWith('attendance')) {
+      return <AttendancePage />;
     }
     return <Dashboard />;
   };

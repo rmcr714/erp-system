@@ -30,6 +30,7 @@ public class LaborerDTO {
     private String pfNo;
     private IdProofDTO idProof;
     private BankDetailsDTO bankDetails;
+    private java.math.BigDecimal salaryPerDay;
     private LaborerStatus status;
     private String photoUrl;
     private String s3Url;

@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-@Service
+// @Service
 public class MockLaborService {
     private final List<Laborer> laborers = new ArrayList<>();
     
@@ -88,6 +88,7 @@ public class MockLaborService {
                         .build())
                 .createdAt(created)
                 .updatedAt(created.plusHours(12))
+                .salaryPerDay(new java.math.BigDecimal(designation.equals("Unskilled") ? 450 : 850))
                 .build());
     }
 
@@ -145,6 +146,7 @@ public class MockLaborService {
                         .build())
                 .status(laborer.getStatus())
                 .photoUrl(laborer.getPhotoUrl())
+                .salaryPerDay(laborer.getSalaryPerDay())
                 .createdAt(laborer.getCreatedAt())
                 .updatedAt(laborer.getUpdatedAt())
                 .build();

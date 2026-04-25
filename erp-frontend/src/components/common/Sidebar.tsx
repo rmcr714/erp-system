@@ -103,7 +103,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage = 'dashboard', isOpen = t
 
         <a 
           href="#attendance" 
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-glass hover:text-text-primary transition-all duration-200"
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+            currentPage === 'attendance' 
+              ? 'bg-accent-primary/10 text-accent-primary' 
+              : 'text-text-secondary hover:bg-glass hover:text-text-primary'
+          }`}
         >
           <span className="text-xl">📅</span> <span className="font-medium">Attendance</span>
         </a>

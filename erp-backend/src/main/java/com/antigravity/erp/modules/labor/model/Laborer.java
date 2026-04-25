@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.antigravity.erp.modules.labor.enums.LaborerStatus;
@@ -45,6 +46,8 @@ public class Laborer {
     private IdProof idProof;
     @Embedded
     private BankDetails bankDetails;
+    
+    private BigDecimal salaryPerDay;
     
     @Enumerated(EnumType.STRING)
     private LaborerStatus status; // Active, Inactive, On Leave
