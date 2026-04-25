@@ -1,4 +1,4 @@
-import type { MonthlyMusterRow, AttendanceSaveRequest } from '../types';
+import type { MonthlyMusterRow, AttendanceSaveRequest, PayrollUpdateRequest } from '../types';
 
 const API_BASE_URL = 'http://localhost:8080/api/attendance';
 
@@ -41,5 +41,23 @@ export const attendanceService = {
             body: JSON.stringify(data),
         });
         if (!response.ok) throw new Error('Failed to record advance');
+    },
+
+    async updatePayroll(request: PayrollUpdateRequest): Promise<void> {
+        const response = await fetch(`${API_BASE_URL}/payroll`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(request),
+        });
+        if (!response.ok) throw new Error('Failed to update payroll');
+    },
+
+    async updatePayrollBatch(requests: PayrollUpdateRequest[]): Promise<void> {
+        const response = await fetch(`${API_BASE_URL}/payroll/batch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requests),
+        });
+        if (!response.ok) throw new Error('Failed to update payroll batch');
     }
 };

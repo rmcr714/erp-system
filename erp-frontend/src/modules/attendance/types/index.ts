@@ -21,3 +21,13 @@ export interface AttendanceSaveRequest {
     year: number;
     dailyUpdates: Record<number, number>;
 }
+
+export interface PayrollUpdateRequest {
+    grNo: string;
+    month: number;
+    year: number;
+    rate: number;
+    siteAdvance: number;
+    onlineAdvance: number;
+    debitBalance: number;
+}

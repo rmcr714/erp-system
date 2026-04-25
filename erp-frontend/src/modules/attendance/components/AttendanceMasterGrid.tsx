@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import type { MonthlyMusterRow } from '../types';
 import { attendanceService } from '../services/attendanceService';
 import { toast } from 'react-hot-toast';
@@ -7,15 +7,21 @@ interface AttendanceMasterGridProps {
     month: number;
     year: number;
     initialData: MonthlyMusterRow[];
+    isEditMode: boolean;
     onDataChange: (updatedData: MonthlyMusterRow[]) => void;
 }
 
-const AttendanceMasterGrid: React.FC<AttendanceMasterGridProps> = ({ 
+export interface AttendanceMasterGridHandle {
+    saveAllChanges: () => Promise<void>;
+}
+
+const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMasterGridProps>(({ 
     month, 
     year, 
     initialData,
+    isEditMode,
     onDataChange 
-}) => {
+}, ref) => {
     const [data, setData] = useState<MonthlyMusterRow[]>(initialData);
     const [dirtyUpdates, setDirtyUpdates] = useState<Record<string, Record<number, number>>>({});
     const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -40,6 +46,8 @@ const AttendanceMasterGrid: React.FC<AttendanceMasterGridProps> = ({
     }, [daysInMonth]);
 
     const handleCellChange = (grNo: string, day: number, value: string) => {
+        if (!isEditMode) return;
+
         const numValue = parseFloat(value) || 0;
         
         setData(prev => prev.map(row => {
@@ -104,6 +112,10 @@ const AttendanceMasterGrid: React.FC<AttendanceMasterGridProps> = ({
             toast.error(`Save Failed: ${errorMsg}`, { id: 'error-toast' });
         }
     };
+
+    useImperativeHandle(ref, () => ({
+        saveAllChanges: handleSaveAll
+    }));
 
     const paginatedData = useMemo(() => {
         const start = (currentPage - 1) * pageSize;
@@ -201,16 +213,6 @@ const AttendanceMasterGrid: React.FC<AttendanceMasterGridProps> = ({
                         {syncStatus === 'saving' && <span className="text-[10px] font-bold text-sky-400 animate-pulse">SAVING...</span>}
                         {syncStatus === 'saved' && <span className="text-[10px] font-bold text-emerald-400">CHANGES SAVED</span>}
                         {syncStatus === 'error' && <span className="text-[10px] font-bold text-rose-400">SAVE FAILED</span>}
-                        <button 
-                            onClick={handleSaveAll}
-                            disabled={syncStatus === 'saving'}
-                            className="px-5 py-2 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 text-white font-bold rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-sky-900/30"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                            </svg>
-                            Save All Changes
-                        </button>
                     </div>
                 </div>
 
@@ -241,31 +243,31 @@ const AttendanceMasterGrid: React.FC<AttendanceMasterGridProps> = ({
                         return (
                             <div key={desig} id={`section-${desig}`} className="mb-20">
                                 {/* Large Section Banner */}
-                                <div className="sticky left-0 z-40 w-full mb-2">
-                                    <div className="bg-gradient-to-r from-sky-900/40 to-transparent backdrop-blur-md border-y border-white/10 px-6 py-4 flex justify-between items-center w-full sticky left-0 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
-                                        <div className="flex items-center gap-4">
+                                <div className="sticky top-0 z-40 w-full mb-2">
+                                    <div className="sticky left-0 bg-gradient-to-r from-sky-900/40 to-slate-950/95 backdrop-blur-md border-y border-white/10 px-4 py-2 flex justify-between items-center w-[calc(100vw-2rem)] md:w-[calc(100vw-4rem)] min-w-[900px] overflow-hidden shadow-[0_4px_14px_rgba(0,0,0,0.35)]">
+                                        <div className="flex items-center gap-3">
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-black text-sky-500 uppercase tracking-[0.3em]">Designation Block</span>
-                                                <h3 className="text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
+                                                <span className="text-[9px] font-black text-sky-500 uppercase tracking-[0.22em]">Designation Block</span>
+                                                <h3 className="text-base font-black text-white uppercase tracking-tight flex items-center gap-3 leading-tight">
                                                     {desig}
-                                                    <span className="bg-sky-500/20 px-3 py-1 rounded-full text-xs text-sky-400 font-black border border-sky-500/20">
+                                                    <span className="bg-sky-500/20 px-2 py-0.5 rounded-full text-[10px] text-sky-400 font-black border border-sky-500/20">
                                                         {rows.length} Workers
                                                     </span>
                                                 </h3>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-10 pr-10">
+                                        <div className="flex items-center gap-6 pr-6">
                                             <div className="text-right">
-                                                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Section Gross</div>
-                                                <div className="text-lg font-black text-emerald-400">₹{sectionGross.toLocaleString()}</div>
+                                                <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Section Gross</div>
+                                                <div className="text-sm font-black text-emerald-400">₹{sectionGross.toLocaleString()}</div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Total Advance</div>
-                                                <div className="text-lg font-black text-orange-400">₹{sectionAdvance.toLocaleString()}</div>
+                                                <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Total Advance</div>
+                                                <div className="text-sm font-black text-orange-400">₹{sectionAdvance.toLocaleString()}</div>
                                             </div>
-                                            <div className="bg-emerald-500/10 border border-emerald-500/20 px-5 py-2 rounded-xl text-right">
-                                                <div className="text-[10px] text-emerald-500/70 font-black uppercase text-center tracking-widest">Total Net Owed</div>
-                                                <div className="text-xl font-black text-white">₹{sectionBalance.toLocaleString()}</div>
+                                            <div className="bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-lg text-right">
+                                                <div className="text-[9px] text-emerald-500/70 font-black uppercase text-center tracking-widest">Total Net Owed</div>
+                                                <div className="text-base font-black text-white leading-tight">₹{sectionBalance.toLocaleString()}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -276,20 +278,20 @@ const AttendanceMasterGrid: React.FC<AttendanceMasterGridProps> = ({
                                     {renderHeader(false)}
                                     <tbody className="bg-slate-950">
                                         {rows.map((row, idx) => (
-                                            <tr key={row.grNo} className={`hover:bg-emerald-500/5 transition-colors group h-12 ${idx % 2 === 0 ? 'bg-white/[0.01]' : ''}`}>
-                                                <td className="sticky left-0 z-10 bg-slate-950 p-3 text-slate-500 font-mono border-r border-b border-white/5 w-[60px] group-hover:bg-slate-900 transition-colors">{row.grNo}</td>
-                                                <td className="sticky left-[60px] z-10 bg-slate-950 p-3 font-medium text-slate-200 border-r-2 border-b border-emerald-500/30 w-[160px] shadow-[4px_0_12px_-2px_rgba(0,0,0,0.7)] group-hover:bg-slate-900 transition-colors">
+                                            <tr key={row.grNo} className={`hover:bg-emerald-500/5 transition-colors group h-9 ${idx % 2 === 0 ? 'bg-white/[0.01]' : ''}`}>
+                                                <td className="sticky left-0 z-10 bg-slate-950 px-3 py-1.5 text-slate-500 font-mono border-r border-b border-white/5 w-[60px] group-hover:bg-slate-900 transition-colors">{row.grNo}</td>
+                                                <td className="sticky left-[60px] z-10 bg-slate-950 px-3 py-1.5 font-medium text-slate-200 border-r-2 border-b border-emerald-500/30 w-[160px] shadow-[4px_0_12px_-2px_rgba(0,0,0,0.7)] group-hover:bg-slate-900 transition-colors">
                                                     <div className="flex flex-col truncate leading-tight">
                                                         <span className="truncate text-[13px] font-bold">{row.name}</span>
                                                         <span className="text-[9px] text-slate-500 uppercase font-black tracking-tighter">{row.designation}</span>
                                                     </div>
                                                 </td>
 
-                                                <td className="p-3 text-slate-400 border-r border-b border-white/5 w-[140px] truncate text-[11px]">{row.bankName}</td>
-                                                <td className="p-3 text-slate-400 font-mono border-r border-b border-white/5 w-[160px] text-[11px] truncate">{row.accountNo}</td>
-                                                <td className="p-3 text-slate-400 font-mono border-r border-b border-white/5 w-[110px] text-[11px] uppercase truncate">{row.ifscCode}</td>
+                                                <td className="px-3 py-1.5 text-slate-400 border-r border-b border-white/5 w-[140px] truncate text-[11px]">{row.bankName}</td>
+                                                <td className="px-3 py-1.5 text-slate-400 font-mono border-r border-b border-white/5 w-[160px] text-[11px] truncate">{row.accountNo}</td>
+                                                <td className="px-3 py-1.5 text-slate-400 font-mono border-r border-b border-white/5 w-[110px] text-[11px] uppercase truncate">{row.ifscCode}</td>
                                                 
-                                                <td className="p-3 text-center border-r border-b border-white/10 bg-slate-900/30 w-[100px] text-sky-400 font-black text-[13px]">
+                                                <td className="px-3 py-1.5 text-center border-r border-b border-white/10 bg-slate-900/30 w-[100px] text-sky-400 font-black text-[13px]">
                                                     ₹{row.salaryPerDay}
                                                 </td>
 
@@ -306,7 +308,10 @@ const AttendanceMasterGrid: React.FC<AttendanceMasterGridProps> = ({
                                                             <input 
                                                                 type="text"
                                                                 value={val === 0 ? '' : val}
-                                                                className={`w-full h-full bg-transparent text-center focus:outline-none transition-all text-[16px] font-black focus:bg-white/10 focus:text-white focus:ring-inset focus:ring-1 focus:ring-emerald-500 ${
+                                                                readOnly={!isEditMode}
+                                                                className={`w-full h-full bg-transparent text-center focus:outline-none transition-all text-[16px] font-black ${
+                                                                    isEditMode ? 'focus:bg-white/10 focus:text-white focus:ring-inset focus:ring-1 focus:ring-emerald-500 cursor-text' : 'cursor-default'
+                                                                } ${
                                                                     val > 0 ? 'text-emerald-400' : 'text-slate-600'
                                                                 }`}
                                                                 placeholder="-"
@@ -323,12 +328,12 @@ const AttendanceMasterGrid: React.FC<AttendanceMasterGridProps> = ({
                                                     );
                                                 })}
 
-                                                <td className="p-3 text-right font-black text-emerald-400 border-r border-b border-white/10 w-[110px] bg-emerald-500/5">₹{row.totalSalary.toLocaleString()}</td>
-                                                <td className="p-3 text-right font-bold text-rose-400/70 border-r border-b border-white/10 w-[100px] text-[11px]">₹{row.siteAdvance.toLocaleString()}</td>
-                                                <td className="p-3 text-right font-bold text-amber-400/70 border-r border-b border-white/10 w-[100px] text-[11px]">₹{row.onlineAdvance.toLocaleString()}</td>
-                                                <td className="p-3 text-right font-bold text-orange-400 border-r border-b border-white/10 w-[100px] bg-orange-500/10 text-[12px]">₹{row.totalAdvance.toLocaleString()}</td>
-                                                <td className="p-3 text-right font-bold text-cyan-400 border-r border-b border-white/10 w-[100px] bg-cyan-500/10 text-[12px]">₹{row.debitBalance.toLocaleString()}</td>
-                                                <td className="p-3 text-right font-black text-white border-b border-white/10 w-[120px] bg-emerald-600/10 text-[14px]">₹{row.closingBalance.toLocaleString()}</td>
+                                                <td className="px-3 py-1.5 text-right font-black text-emerald-400 border-r border-b border-white/10 w-[110px] bg-emerald-500/5">₹{row.totalSalary.toLocaleString()}</td>
+                                                <td className="px-3 py-1.5 text-right font-bold text-rose-400/70 border-r border-b border-white/10 w-[100px] text-[11px]">₹{row.siteAdvance.toLocaleString()}</td>
+                                                <td className="px-3 py-1.5 text-right font-bold text-amber-400/70 border-r border-b border-white/10 w-[100px] text-[11px]">₹{row.onlineAdvance.toLocaleString()}</td>
+                                                <td className="px-3 py-1.5 text-right font-bold text-orange-400 border-r border-b border-white/10 w-[100px] bg-orange-500/10 text-[12px]">₹{row.totalAdvance.toLocaleString()}</td>
+                                                <td className="px-3 py-1.5 text-right font-bold text-cyan-400 border-r border-b border-white/10 w-[100px] bg-cyan-500/10 text-[12px]">₹{row.debitBalance.toLocaleString()}</td>
+                                                <td className="px-3 py-1.5 text-right font-black text-white border-b border-white/10 w-[120px] bg-emerald-600/10 text-[14px]">₹{row.closingBalance.toLocaleString()}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -340,6 +345,6 @@ const AttendanceMasterGrid: React.FC<AttendanceMasterGridProps> = ({
             </div>
         </div>
     );
-};
+});
 
 export default AttendanceMasterGrid;

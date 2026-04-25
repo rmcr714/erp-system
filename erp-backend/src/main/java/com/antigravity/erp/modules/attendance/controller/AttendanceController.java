@@ -2,6 +2,7 @@ package com.antigravity.erp.modules.attendance.controller;
 
 import com.antigravity.erp.modules.attendance.dto.AttendanceSaveRequest;
 import com.antigravity.erp.modules.attendance.dto.MonthlyMusterRowDTO;
+import com.antigravity.erp.modules.attendance.dto.PayrollUpdateRequest;
 import com.antigravity.erp.modules.attendance.service.AttendanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -50,5 +51,17 @@ public class AttendanceController {
             @RequestParam(name = "rate") java.math.BigDecimal rate) {
         attendanceService.updateRate(grNo, month, year, rate);
         return ResponseEntity.ok("Rate updated successfully");
+    }
+
+    @PostMapping("/payroll")
+    public ResponseEntity<String> updatePayroll(@RequestBody PayrollUpdateRequest request) {
+        attendanceService.updatePayroll(request);
+        return ResponseEntity.ok("Payroll updated successfully");
+    }
+
+    @PostMapping("/payroll/batch")
+    public ResponseEntity<String> updatePayrollBatch(@RequestBody List<PayrollUpdateRequest> requests) {
+        attendanceService.updatePayrollBatch(requests);
+        return ResponseEntity.ok("Payroll batch updated successfully");
     }
 }
