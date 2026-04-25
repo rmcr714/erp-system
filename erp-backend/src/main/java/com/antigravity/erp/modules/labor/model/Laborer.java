@@ -52,7 +52,6 @@ public class Laborer {
     @Enumerated(EnumType.STRING)
     private LaborerStatus status; // Active, Inactive, On Leave
     private String photoUrl;
-    private String s3Url;
 
     // Auditing
     @CreationTimestamp

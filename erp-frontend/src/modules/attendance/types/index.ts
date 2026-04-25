@@ -12,6 +12,7 @@ export interface MonthlyMusterRow {
     onlineAdvance: number;
     totalAdvance: number;
     closingBalance: number;
+    debitBalance: number;
 }
 
 export interface AttendanceSaveRequest {

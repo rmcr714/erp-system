@@ -36,4 +36,5 @@ public class MonthlyPayroll {
     private BigDecimal onlineAdvance;
     private BigDecimal totalAdvance;
     private BigDecimal netBalance;
+    private BigDecimal debitBalance;
 }

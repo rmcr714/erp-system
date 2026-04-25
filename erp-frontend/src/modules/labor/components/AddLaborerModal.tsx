@@ -25,7 +25,7 @@ const REQUIRED_FIELDS = [
   'contactNo',
   'permanentAddress.line', 'permanentAddress.state', 'permanentAddress.pincode',
   'idProof.idNumber',
-  'bankDetails.accountNo', 'bankDetails.ifscCode'
+  'bankDetails.bankName', 'bankDetails.accountNo', 'bankDetails.ifscCode'
 ];
 
 type ScanState = 'idle' | 'loading' | 'success' | 'error';
@@ -630,14 +630,15 @@ const AddLaborerModal: React.FC<AddLaborerModalProps> = ({ isOpen, onClose }) =>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-text-secondary">Bank Name</label>
+                <label className="text-sm font-medium text-text-secondary">Bank Name <span className="text-red-400">*</span></label>
                 <input
                   type="text"
-                  className="w-full bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all"
+                  className={inputClass('bankDetails.bankName')}
                   placeholder="e.g. State Bank of India"
                   value={getFieldValue('bankDetails.bankName')}
                   onChange={(e) => handleInputChange('bankDetails.bankName', e.target.value)}
                 />
+                {fieldError('bankDetails.bankName')}
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Branch Name</label>

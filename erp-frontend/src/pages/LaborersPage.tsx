@@ -40,6 +40,10 @@ const LaborersPage: React.FC = () => {
   const [initialLoad, setInitialLoad] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(50);
+
   useEffect(() => {
     // Load all laborers on initial page load only
     const fetchInitialData = async () => {
@@ -47,6 +51,7 @@ const LaborersPage: React.FC = () => {
       try {
         const data = await laborService.getAllLaborers({});
         setLaborers(data);
+        setCurrentPage(1); // Reset to page 1 on new data
       } catch (err) {
         console.error("Error fetching laborers:", err);
       } finally {
@@ -72,12 +77,18 @@ const LaborersPage: React.FC = () => {
     try {
       const data = await laborService.getAllLaborers(criteria);
       setLaborers(data);
+      setCurrentPage(1); // Reset to page 1 on search
     } catch (err) {
       console.error("Error fetching laborers:", err);
     } finally {
       setLoading(false);
     }
   };
+
+  // Pagination Logic
+  const totalPages = Math.ceil(laborers.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedLaborers = laborers.slice(startIndex, startIndex + pageSize);
 
   const clearFilters = () => {
     const defaultCriteria = {
@@ -94,12 +105,12 @@ const LaborersPage: React.FC = () => {
 
   const hasActiveFilters = Object.entries(searchCriteria).some(([key, v]) => {
     if (key === 'onlyActive') return v === false; 
-    if (key === 'designation') return v !== ''; // This includes '*' as an active filter
+    if (key === 'designation') return v !== ''; 
     return v !== '';
   });
 
   return (
-    <div className="flex h-screen w-screen font-inter bg-bg-main">
+    <div className="flex h-screen w-screen font-inter bg-bg-main text-text-primary">
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div 
@@ -111,7 +122,7 @@ const LaborersPage: React.FC = () => {
       {/* Sidebar */}
       <Sidebar currentPage="laborers" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <main className="flex-1 p-10 overflow-y-auto flex flex-col gap-8">
+      <main className="flex-1 p-10 overflow-y-auto flex flex-col gap-8 custom-scrollbar">
         <header className="flex justify-between items-center">
           {/* Hamburger Menu Button */}
           <button
@@ -153,7 +164,7 @@ const LaborersPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            {/* Search by Name */}
+            {/* Search inputs remain same... */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-text-secondary uppercase tracking-tight">By Name</label>
               <div className="relative">
@@ -168,7 +179,6 @@ const LaborersPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Search by GR No */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-text-secondary uppercase tracking-tight">By GR Number</label>
               <div className="relative">
@@ -183,7 +193,6 @@ const LaborersPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Search by Designation */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-text-secondary uppercase tracking-tight">By Designation</label>
               <div className="relative">
@@ -204,7 +213,6 @@ const LaborersPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Search by ID Proof Number */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-text-secondary uppercase tracking-tight">By ID Proof Number</label>
               <div className="relative">
@@ -219,7 +227,6 @@ const LaborersPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Search by Phone Number */}
             <div className="space-y-2">
               <label className="text-xs font-medium text-text-secondary uppercase tracking-tight">By Phone Number</label>
               <div className="relative">
@@ -234,7 +241,6 @@ const LaborersPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Status Filter */}
             <div className="flex items-center gap-3 pt-6 lg:pt-8">
               <label className="flex items-center gap-3 cursor-pointer group">
                 <div className="relative">
@@ -261,18 +267,17 @@ const LaborersPage: React.FC = () => {
                 '⏳ Searching...'
               ) : (
                 <>
-                  Found <span className="text-accent-primary font-bold">{laborers.length}</span> laborer{laborers.length !== 1 ? 's' : ''}
-                  {hasActiveFilters && ' matching your filters'}
+                  Showing <span className="text-accent-primary font-bold">{Math.min(startIndex + 1, laborers.length)}-{Math.min(startIndex + pageSize, laborers.length)}</span> of <span className="font-bold">{laborers.length}</span> laborers
                 </>
               )}
             </p>
             <button
               onClick={() => performSearch(searchCriteria)}
-              disabled={!hasActiveFilters}
+              disabled={loading}
               className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all active:scale-95 ${
-                hasActiveFilters
-                  ? 'bg-accent-secondary/30 border-2 border-accent-secondary text-accent-secondary hover:bg-accent-secondary/50 hover:shadow-lg hover:shadow-accent-secondary/30 cursor-pointer'
-                  : 'bg-white/5 border-2 border-border-subtle text-text-secondary/40 cursor-not-allowed opacity-50'
+                loading
+                  ? 'bg-white/5 border-2 border-border-subtle text-text-secondary/40 cursor-not-allowed opacity-50'
+                  : 'bg-accent-secondary/30 border-2 border-accent-secondary text-accent-secondary hover:bg-accent-secondary/50 hover:shadow-lg hover:shadow-accent-secondary/30 cursor-pointer'
               }`}
             >
               <span>🔍</span> Search
@@ -281,11 +286,38 @@ const LaborersPage: React.FC = () => {
         </section>
 
         {/* Laborers Table */}
-        <LaborerTable 
-          laborers={laborers} 
-          loading={loading} 
-          onViewProfile={setSelectedLaborer}
-        />
+        <div className="flex flex-col gap-4">
+          <LaborerTable 
+            laborers={paginatedLaborers} 
+            loading={loading} 
+            onViewProfile={setSelectedLaborer}
+          />
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-border-subtle">
+              <span className="text-xs font-medium text-text-secondary uppercase tracking-widest">
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-30 rounded-lg text-xs font-bold transition-all border border-border-subtle"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary disabled:opacity-30 rounded-lg text-xs font-bold transition-all border border-accent-primary/30"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <AddLaborerModal 
           isOpen={isAddModalOpen} 

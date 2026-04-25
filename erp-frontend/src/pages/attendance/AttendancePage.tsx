@@ -9,7 +9,7 @@ const AttendancePage: React.FC = () => {
     const [year, setYear] = useState(new Date().getFullYear());
     const [data, setData] = useState<MonthlyMusterRow[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery] = useState('');
 
     useEffect(() => {
         loadMuster();
@@ -39,9 +39,9 @@ const AttendancePage: React.FC = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-200 p-8 flex flex-col gap-8">
+        <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8 flex flex-col gap-4 md:gap-8 overflow-hidden">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex-shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
                 <div className="flex flex-col gap-4">
                     <a 
                         href="#dashboard" 
@@ -81,55 +81,8 @@ const AttendancePage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white/5 p-6 rounded-2xl border border-white/10 flex flex-col gap-1">
-                    <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Total Strength</span>
-                    <span className="text-3xl font-black text-white">{data.length}</span>
-                </div>
-                <div className="bg-white/5 p-6 rounded-2xl border border-white/10 flex flex-col gap-1">
-                    <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Present Today</span>
-                    <span className="text-3xl font-black text-emerald-400">
-                        {data.filter(r => r.attendance[new Date().getDate()] > 0).length}
-                    </span>
-                </div>
-                <div className="bg-white/5 p-6 rounded-2xl border border-white/10 flex flex-col gap-1">
-                    <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Total Liability</span>
-                    <span className="text-3xl font-black text-sky-400">₹{data.reduce((a,b) => a + b.closingBalance, 0).toLocaleString()}</span>
-                </div>
-                <div className="bg-white/5 p-6 rounded-2xl border border-white/10 flex flex-col gap-1">
-                    <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Advances Paid</span>
-                    <span className="text-3xl font-black text-amber-500">₹{data.reduce((a,b) => a + b.totalAdvance, 0).toLocaleString()}</span>
-                </div>
-            </div>
-
-            {/* Toolbar & Search */}
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative w-full md:w-96">
-                    <input 
-                        type="text" 
-                        placeholder="Search by name, gr no, or designation..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-10 text-sm focus:outline-none focus:border-accent-primary/50 transition-all"
-                    />
-                    <svg className="absolute left-3 top-3.5 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-                
-                <div className="flex gap-3 w-full md:w-auto">
-                    <button className="flex-1 md:flex-none px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold border border-white/10 transition-all active:scale-95">
-                        Download Excel
-                    </button>
-                    <button className="flex-1 md:flex-none px-6 py-3 bg-accent-primary text-white rounded-xl font-bold shadow-lg shadow-accent-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
-                        Sync Data
-                    </button>
-                </div>
-            </div>
-
             {/* Main Grid Section */}
-            <div className="flex-1 relative">
+            <div className="flex-1 min-h-0 relative overflow-hidden">
                 {loading ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-slate-950/50 backdrop-blur-sm z-50">
                         <div className="flex flex-col items-center gap-4">

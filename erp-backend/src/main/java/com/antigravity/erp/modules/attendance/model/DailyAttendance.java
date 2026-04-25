@@ -26,18 +26,20 @@ public class DailyAttendance {
     @Column(name = "gr_no", nullable = false)
     private String grNo;
 
+    @Id
+    private Integer day;
+
+    @Id
+    private Integer month;
+
+    @Id
+    private Integer year;
+
     private String name;
     private String designation;
 
     @Column(name = "work_date", nullable = false)
     private LocalDate workDate;
-
-    @Id
-    private Integer year;
-    @Id
-    private Integer month;
-    @Id
-    private Integer day;
 
     private Double units; // e.g. 1.0 for full day, 0.5 for half
 }

@@ -31,8 +31,10 @@
   }
 
   body {
-    @apply font-inter bg-bg-main text-text-primary antialiased overflow-hidden;
+    @apply font-inter bg-bg-main text-text-primary antialiased;
     color-scheme: dark;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   h1, h2, h3 {
@@ -44,5 +46,35 @@
   /* Helper for glassmorphism shared across cards/sidebar */
   .glass-card {
     @apply bg-bg-card border border-border-subtle rounded-[20px] transition-all duration-200;
+  }
+  
+  /* Custom Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  /* Hide scrollbar but keep functionality */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

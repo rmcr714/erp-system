@@ -73,7 +73,6 @@ public class LaborerServiceImpl implements LaborerService {
                 .salaryPerDay(laborer.getSalaryPerDay())
                 .status(laborer.getStatus())
                 .photoUrl(laborer.getPhotoUrl())
-                .s3Url(laborer.getS3Url())
                 .createdAt(laborer.getCreatedAt())
                 .updatedAt(laborer.getUpdatedAt())
                 .build();
@@ -101,7 +100,6 @@ public class LaborerServiceImpl implements LaborerService {
                 .salaryPerDay(dto.getSalaryPerDay())
                 .status(dto.getStatus())
                 .photoUrl(dto.getPhotoUrl())
-                .s3Url(dto.getS3Url())
                 .build();
     }
 

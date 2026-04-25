@@ -1,6 +1,7 @@
 package com.antigravity.erp.modules.attendance.service;
 
 import com.antigravity.erp.modules.attendance.dto.MonthlyMusterRowDTO;
+import com.antigravity.erp.modules.attendance.dto.AttendanceSaveRequest;
 import com.antigravity.erp.modules.attendance.model.*;
 import com.antigravity.erp.modules.attendance.repository.*;
 import com.antigravity.erp.modules.labor.service.LaborerService;
@@ -56,6 +57,9 @@ public class AttendanceService {
             BigDecimal balance = (payroll != null && payroll.getNetBalance() != null) 
                                  ? payroll.getNetBalance() 
                                  : BigDecimal.ZERO;
+            BigDecimal debitBal = (payroll != null && payroll.getDebitBalance() != null) 
+                                  ? payroll.getDebitBalance() 
+                                  : BigDecimal.ZERO;
 
             return MonthlyMusterRowDTO.builder()
                     .grNo(laborer.getGrNo())
@@ -71,12 +75,36 @@ public class AttendanceService {
                     .onlineAdvance(onlineAdv)
                     .totalAdvance(totalAdv)
                     .closingBalance(balance)
+                    .debitBalance(debitBal)
                     .build();
         }).collect(Collectors.toList());
     }
 
     @Transactional
     public void saveAttendance(String grNo, Integer month, Integer year, Map<Integer, Double> dailyUpdates) {
+        Map<String, LaborerDTO> laborerMap = laborerService.getAllLaborers().stream()
+                .collect(Collectors.toMap(LaborerDTO::getGrNo, laborer -> laborer));
+        saveAttendance(grNo, month, year, dailyUpdates, laborerMap);
+    }
+
+    @Transactional
+    public void saveBatchAttendance(List<AttendanceSaveRequest> requests) {
+        Map<String, LaborerDTO> laborerMap = laborerService.getAllLaborers().stream()
+                .collect(Collectors.toMap(LaborerDTO::getGrNo, laborer -> laborer));
+
+        for (AttendanceSaveRequest request : requests) {
+            saveAttendance(
+                    request.getGrNo(),
+                    request.getMonth(),
+                    request.getYear(),
+                    request.getDailyUpdates(),
+                    laborerMap
+            );
+        }
+    }
+
+    private void saveAttendance(String grNo, Integer month, Integer year, Map<Integer, Double> dailyUpdates,
+                                Map<String, LaborerDTO> laborerMap) {
         try {
             AttendanceMuster muster = musterRepository.findByGrNoAndMonthAndYear(grNo, month, year)
                     .orElse(AttendanceMuster.builder()
@@ -89,13 +117,13 @@ public class AttendanceService {
             Map<Integer, Double> currentData = muster.getAttendanceData();
             if (currentData == null) currentData = new HashMap<>();
             
-            for (Map.Entry<Integer, Double> entry : dailyUpdates.entrySet()) {
+            Map<Integer, Double> updates = dailyUpdates != null ? dailyUpdates : new HashMap<>();
+            for (Map.Entry<Integer, Double> entry : updates.entrySet()) {
                 Integer day = entry.getKey();
                 Double units = entry.getValue();
                 currentData.put(day, units);
                 
-                List<LaborerDTO> all = laborerService.getAllLaborers();
-                LaborerDTO laborer = all.stream().filter(l -> l.getGrNo().equals(grNo)).findFirst().orElse(null);
+                LaborerDTO laborer = laborerMap.get(grNo);
                 if (laborer != null) {
                     try {
                         updateDailyAttendance(laborer, year, month, day, units);
@@ -114,7 +142,7 @@ public class AttendanceService {
 
             // Sync to Monthly Payroll
             try {
-                syncMonthlyPayroll(grNo, month, year);
+                syncMonthlyPayroll(grNo, month, year, laborerMap);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to update Monthly Payroll: " + e.getMessage());
             }
@@ -144,6 +172,10 @@ public class AttendanceService {
     }
 
     private void syncMonthlyPayroll(String grNo, Integer month, Integer year) {
+        syncMonthlyPayroll(grNo, month, year, null);
+    }
+
+    private void syncMonthlyPayroll(String grNo, Integer month, Integer year, Map<String, LaborerDTO> laborerMap) {
         AttendanceMuster muster = musterRepository.findByGrNoAndMonthAndYear(grNo, month, year).orElse(null);
         MonthlyPayroll payroll = payrollRepository.findByGrNoAndMonthAndYear(grNo, month, year)
                 .orElse(MonthlyPayroll.builder()
@@ -157,8 +189,12 @@ public class AttendanceService {
 
         // Use profile rate if not set in payroll
         if (payroll.getRate() == null) {
-            List<LaborerDTO> all = laborerService.getAllLaborers();
-            LaborerDTO laborer = all.stream().filter(l -> l.getGrNo().equals(grNo)).findFirst().orElse(null);
+            LaborerDTO laborer = laborerMap != null
+                    ? laborerMap.get(grNo)
+                    : laborerService.getAllLaborers().stream()
+                            .filter(l -> l.getGrNo().equals(grNo))
+                            .findFirst()
+                            .orElse(null);
             if (laborer != null) payroll.setRate(laborer.getSalaryPerDay());
         }
 
@@ -179,13 +215,27 @@ public class AttendanceService {
         BigDecimal onlineAdv = payroll.getOnlineAdvance() != null ? payroll.getOnlineAdvance() : BigDecimal.ZERO;
         BigDecimal totalAdv = siteAdv.add(onlineAdv);
 
-        // 3. Update Payroll Record
+        // 3. Calculate Net Balance and Debit Balance
+        // Net Balance = Gross Salary - Total Advance (if positive)
+        // Debit Balance = Total Advance - Gross Salary (if advances exceed salary)
+        BigDecimal netBalance;
+        BigDecimal debitBalance;
+        if (grossSalary.compareTo(totalAdv) >= 0) {
+            netBalance = grossSalary.subtract(totalAdv);
+            debitBalance = BigDecimal.ZERO;
+        } else {
+            netBalance = BigDecimal.ZERO;
+            debitBalance = totalAdv.subtract(grossSalary);
+        }
+
+        // 4. Update Payroll Record
         payroll.setTotalUnits(BigDecimal.valueOf(totalUnits));
         payroll.setGrossSalary(grossSalary);
         payroll.setSiteAdvance(siteAdv);
         payroll.setOnlineAdvance(onlineAdv);
         payroll.setTotalAdvance(totalAdv);
-        payroll.setNetBalance(grossSalary.subtract(totalAdv));
+        payroll.setNetBalance(netBalance);
+        payroll.setDebitBalance(debitBalance);
         
         payrollRepository.save(payroll);
     }

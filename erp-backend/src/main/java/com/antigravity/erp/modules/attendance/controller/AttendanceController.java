@@ -38,14 +38,7 @@ public class AttendanceController {
     
     @PostMapping("/save-batch")
     public ResponseEntity<String> saveBatchAttendance(@RequestBody List<AttendanceSaveRequest> requests) {
-        for (AttendanceSaveRequest request : requests) {
-            attendanceService.saveAttendance(
-                    request.getGrNo(),
-                    request.getMonth(),
-                    request.getYear(),
-                    request.getDailyUpdates()
-            );
-        }
+        attendanceService.saveBatchAttendance(requests);
         return ResponseEntity.ok("Batch attendance saved successfully");
     }
 
