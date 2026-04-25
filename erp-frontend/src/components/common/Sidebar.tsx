@@ -16,8 +16,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage = 'dashboard', isOpen = t
   };
 
   return (
-    <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-sidebar bg-bg-sidebar border-r border-border-subtle p-8 flex flex-col gap-8 overflow-y-auto transition-transform duration-300 ease-in-out ${
-      isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+    <aside className={`fixed inset-y-0 left-0 z-50 w-sidebar bg-bg-sidebar border-r border-border-subtle p-8 flex flex-col gap-8 overflow-y-auto transition-transform duration-300 ease-in-out shadow-2xl shadow-black/40 ${
+      isOpen ? 'translate-x-0' : '-translate-x-full'
     }`}>
       <div className="flex justify-between items-center">
         <a 
@@ -30,7 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage = 'dashboard', isOpen = t
         {/* Close button for mobile */}
         <button
           onClick={onClose}
-          className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors text-text-secondary hover:text-text-primary"
+          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-text-secondary hover:text-text-primary"
           aria-label="Close menu"
         >
           ✕

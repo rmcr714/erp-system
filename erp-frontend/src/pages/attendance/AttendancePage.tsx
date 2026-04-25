@@ -3,6 +3,7 @@ import AttendanceMasterGrid, { type AttendanceMasterGridHandle } from '../../mod
 import { attendanceService } from '../../modules/attendance/services/attendanceService';
 import type { MonthlyMusterRow } from '../../modules/attendance/types';
 import { toast } from 'react-hot-toast';
+import Sidebar from '../../components/common/Sidebar';
 
 const AttendancePage: React.FC = () => {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -10,6 +11,7 @@ const AttendancePage: React.FC = () => {
     const [data, setData] = useState<MonthlyMusterRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery] = useState('');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const gridRef = useRef<AttendanceMasterGridHandle>(null);
     const isEditMode = window.location.hash.startsWith('#attendance/edit');
 
@@ -42,18 +44,39 @@ const AttendancePage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8 flex flex-col gap-4 md:gap-8 overflow-hidden">
+            {sidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-40" 
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+            <Sidebar currentPage="attendance" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
             {/* Header Area */}
             <div className="flex-shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
                 <div className="flex flex-col gap-4">
-                    <a 
-                        href="#dashboard" 
-                        className="group flex items-center gap-2 w-fit px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-bold"
-                    >
-                        <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-800 text-slate-500 group-hover:text-white group-hover:bg-sky-600 transition-colors">
-                            &lt;
-                        </span>
-                        Dashboard
-                    </a>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                            aria-label="Open menu"
+                        >
+                            <span className="flex flex-col gap-1">
+                                <span className="block h-0.5 w-5 bg-current"></span>
+                                <span className="block h-0.5 w-5 bg-current"></span>
+                                <span className="block h-0.5 w-5 bg-current"></span>
+                            </span>
+                        </button>
+                        <a 
+                            href="#dashboard" 
+                            className="group flex items-center gap-2 w-fit px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-bold"
+                        >
+                            <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-800 text-slate-500 group-hover:text-white group-hover:bg-sky-600 transition-colors">
+                                &lt;
+                            </span>
+                            Dashboard
+                        </a>
+                    </div>
                     <h1 className="text-4xl font-black font-outfit text-white tracking-tight flex items-center gap-3">
                         {isEditMode ? 'Edit Attendance' : 'Attendance Muster'}
                         <span className="px-3 py-1 text-xs rounded-full bg-accent-primary/20 text-accent-primary border border-accent-primary/30 uppercase tracking-widest">Live</span>

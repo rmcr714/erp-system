@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { attendanceService } from '../../modules/attendance/services/attendanceService';
 import type { MonthlyMusterRow, PayrollUpdateRequest } from '../../modules/attendance/types';
+import Sidebar from '../../components/common/Sidebar';
 
 const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -35,6 +36,7 @@ const PayrollPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     const isEditMode = window.location.hash.startsWith('#payroll/edit');
     const pageSize = 100;
@@ -151,14 +153,35 @@ const PayrollPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8 flex flex-col gap-4 overflow-hidden">
+            {sidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-40" 
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+            <Sidebar currentPage="payroll" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
             <div className="flex-shrink-0 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                 <div className="flex flex-col gap-3">
-                    <a href="#dashboard" className="group flex items-center gap-2 w-fit px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-bold">
-                        <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-800 text-slate-500 group-hover:text-white group-hover:bg-sky-600 transition-colors">
-                            &lt;
-                        </span>
-                        Dashboard
-                    </a>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                            aria-label="Open menu"
+                        >
+                            <span className="flex flex-col gap-1">
+                                <span className="block h-0.5 w-5 bg-current"></span>
+                                <span className="block h-0.5 w-5 bg-current"></span>
+                                <span className="block h-0.5 w-5 bg-current"></span>
+                            </span>
+                        </button>
+                        <a href="#dashboard" className="group flex items-center gap-2 w-fit px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-bold">
+                            <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-800 text-slate-500 group-hover:text-white group-hover:bg-sky-600 transition-colors">
+                                &lt;
+                            </span>
+                            Dashboard
+                        </a>
+                    </div>
                     <div>
                         <h1 className="text-4xl font-black font-outfit text-white tracking-tight">
                             {isEditMode ? 'Edit Payroll' : 'Payroll'}

@@ -9,7 +9,7 @@ const Dashboard: React.FC = () => {
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden" 
+          className="fixed inset-0 bg-black/50 z-40" 
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -22,7 +22,7 @@ const Dashboard: React.FC = () => {
           {/* Hamburger Menu Button */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
             aria-label="Toggle menu"
           >
             <div className="w-6 h-6 flex flex-col justify-center items-center">
