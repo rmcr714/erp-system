@@ -47,8 +47,6 @@ public class Laborer {
     @Embedded
     private BankDetails bankDetails;
     
-    private BigDecimal salaryPerDay;
-    
     @Enumerated(EnumType.STRING)
     private LaborerStatus status; // Active, Inactive, On Leave
     private String photoUrl;

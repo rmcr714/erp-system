@@ -10,6 +10,7 @@ const AttendancePage: React.FC = () => {
     const [year, setYear] = useState(new Date().getFullYear());
     const [data, setData] = useState<MonthlyMusterRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const [startingMonth, setStartingMonth] = useState(false);
     const [searchQuery] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const gridRef = useRef<AttendanceMasterGridHandle>(null);
@@ -31,6 +32,19 @@ const AttendancePage: React.FC = () => {
         }
     };
 
+    const handleStartMonth = async () => {
+        setStartingMonth(true);
+        try {
+            await attendanceService.startMonth(month, year);
+            toast.success(`Attendance started for ${monthNames[month - 1]}`);
+            loadMuster();
+        } catch (error) {
+            toast.error('Failed to start month');
+        } finally {
+            setStartingMonth(false);
+        }
+    };
+
     const filteredData = data.filter(row => 
         row.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         row.grNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -41,6 +55,10 @@ const AttendancePage: React.FC = () => {
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ];
+
+    const currentDate = new Date();
+    const isPastMonth = year < currentDate.getFullYear() || 
+                       (year === currentDate.getFullYear() && month < currentDate.getMonth() + 1);
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8 flex flex-col gap-4 md:gap-8 overflow-hidden">
@@ -58,13 +76,13 @@ const AttendancePage: React.FC = () => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setSidebarOpen(true)}
-                            className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                            className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-accent-primary hover:text-white hover:bg-accent-primary hover:shadow-[0_0_15px_rgba(14,165,233,0.4)] transition-all duration-300 group"
                             aria-label="Open menu"
                         >
-                            <span className="flex flex-col gap-1">
-                                <span className="block h-0.5 w-5 bg-current"></span>
-                                <span className="block h-0.5 w-5 bg-current"></span>
-                                <span className="block h-0.5 w-5 bg-current"></span>
+                            <span className="flex flex-col gap-[4px] items-center">
+                                <span className="block h-[2px] w-5 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
+                                <span className="block h-[2px] w-3 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
+                                <span className="block h-[2px] w-5 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
                             </span>
                         </button>
                         <a 
@@ -139,14 +157,24 @@ const AttendancePage: React.FC = () => {
                     </div>
                 ) : data.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-96 bg-white/5 border border-dashed border-white/10 rounded-2xl gap-4">
-                        <div className="text-6xl">🔍</div>
+                        <div className="text-6xl">📅</div>
                         <div className="text-center">
-                            <h3 className="text-xl font-bold text-white">No Laborers Found</h3>
-                            <p className="text-slate-500">Please add laborers in the Directory first.</p>
+                            <h3 className="text-xl font-bold text-white">No Muster Records for {monthNames[month - 1]} {year}</h3>
+                            <p className="text-slate-500">
+                                {isPastMonth 
+                                    ? "There is no historical attendance data for this month."
+                                    : "Attendance for this month hasn't been started yet."}
+                            </p>
                         </div>
-                        <a href="#laborers" className="px-6 py-2 bg-accent-primary text-white rounded-xl font-bold">
-                            Go to Directory
-                        </a>
+                        {!isPastMonth && (
+                            <button 
+                                onClick={handleStartMonth}
+                                disabled={startingMonth}
+                                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-colors disabled:opacity-50"
+                            >
+                                {startingMonth ? 'Starting...' : `Start Attendance for ${monthNames[month - 1]}`}
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <AttendanceMasterGrid 

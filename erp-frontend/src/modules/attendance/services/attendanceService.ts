@@ -9,6 +9,13 @@ export const attendanceService = {
         return response.json();
     },
 
+    async startMonth(month: number, year: number): Promise<void> {
+        const response = await fetch(`${API_BASE_URL}/start-month?month=${month}&year=${year}`, {
+            method: 'POST'
+        });
+        if (!response.ok) throw new Error('Failed to start month');
+    },
+
     async saveAttendance(request: AttendanceSaveRequest): Promise<void> {
         const response = await fetch(`${API_BASE_URL}/save`, {
             method: 'POST',

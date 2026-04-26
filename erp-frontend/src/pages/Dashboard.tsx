@@ -18,25 +18,30 @@ const Dashboard: React.FC = () => {
       <Sidebar currentPage="dashboard" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className="flex-1 p-10 overflow-y-auto flex flex-col gap-8">
-        <header className="flex justify-between items-center">
-          {/* Hamburger Menu Button */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-            aria-label="Toggle menu"
-          >
-            <div className="w-6 h-6 flex flex-col justify-center items-center">
-              <span className={`block w-5 h-0.5 bg-text-primary transition-all duration-300 ${sidebarOpen ? 'rotate-45 translate-y-1' : '-translate-y-1'}`} />
-              <span className={`block w-5 h-0.5 bg-text-primary transition-all duration-300 ${sidebarOpen ? 'opacity-0' : 'opacity-100'}`} />
-              <span className={`block w-5 h-0.5 bg-text-primary transition-all duration-300 ${sidebarOpen ? '-rotate-45 -translate-y-1' : 'translate-y-1'}`} />
+        {/* Header Area */}
+        <div className="flex-shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-accent-primary hover:text-white hover:bg-accent-primary hover:shadow-[0_0_15px_rgba(14,165,233,0.4)] transition-all duration-300 group"
+                        aria-label="Open menu"
+                    >
+                        <span className="flex flex-col gap-[4px] items-center">
+                            <span className="block h-[2px] w-5 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
+                            <span className="block h-[2px] w-3 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
+                            <span className="block h-[2px] w-5 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
+                        </span>
+                    </button>
+                </div>
+                <h1 className="text-4xl font-black font-outfit text-text-primary tracking-tight flex items-center gap-3">
+                    Dashboard
+                </h1>
+                <p className="text-text-secondary text-lg">
+                    Welcome back! Here's an overview of your ERP system.
+                </p>
             </div>
-          </button>
-
-          <div className="flex-1 lg:flex-none">
-            <h1 className="text-4xl font-bold mb-2 tracking-tight text-text-primary">Dashboard</h1>
-            <p className="text-text-secondary text-lg">Welcome back! Here's an overview of your ERP system.</p>
-          </div>
-        </header>
+        </div>
 
         <StatGrid 
           totalLaborers="3,000" 

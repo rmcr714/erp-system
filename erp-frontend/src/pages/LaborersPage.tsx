@@ -126,31 +126,48 @@ const LaborersPage: React.FC = () => {
       <Sidebar currentPage="laborers" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className="flex-1 p-10 overflow-y-auto flex flex-col gap-8 custom-scrollbar">
-        <header className="flex justify-between items-center">
-          {/* Hamburger Menu Button */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-            aria-label="Toggle menu"
-          >
-            <div className="w-6 h-6 flex flex-col justify-center items-center">
-              <span className={`block w-5 h-0.5 bg-text-primary transition-all duration-300 ${sidebarOpen ? 'rotate-45 translate-y-1' : '-translate-y-1'}`} />
-              <span className={`block w-5 h-0.5 bg-text-primary transition-all duration-300 ${sidebarOpen ? 'opacity-0' : 'opacity-100'}`} />
-              <span className={`block w-5 h-0.5 bg-text-primary transition-all duration-300 ${sidebarOpen ? '-rotate-45 -translate-y-1' : 'translate-y-1'}`} />
+        {/* Header Area */}
+        <div className="flex-shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-accent-primary hover:text-white hover:bg-accent-primary hover:shadow-[0_0_15px_rgba(14,165,233,0.4)] transition-all duration-300 group"
+                        aria-label="Open menu"
+                    >
+                        <span className="flex flex-col gap-[4px] items-center">
+                            <span className="block h-[2px] w-5 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
+                            <span className="block h-[2px] w-3 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
+                            <span className="block h-[2px] w-5 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
+                        </span>
+                    </button>
+                    <a 
+                        href="#dashboard" 
+                        className="group flex items-center gap-2 w-fit px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-bold"
+                    >
+                        <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-800 text-slate-500 group-hover:text-white group-hover:bg-sky-600 transition-colors">
+                            &lt;
+                        </span>
+                        Dashboard
+                    </a>
+                </div>
+                <h1 className="text-4xl font-black font-outfit text-text-primary tracking-tight flex items-center gap-3">
+                    Laborer Directory
+                </h1>
+                <p className="text-text-secondary text-lg">
+                    Manage your workforce across all active project sites.
+                </p>
             </div>
-          </button>
 
-          <div className="flex-1">
-            <h1 className="text-4xl font-bold mb-2 tracking-tight text-text-primary">Laborer Directory</h1>
-            <p className="text-text-secondary text-lg">Manage your workforce across all active project sites.</p>
-          </div>
-          <button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="bg-accent-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-accent-secondary hover:-translate-y-0.5 shadow-lg shadow-accent-primary/20 transition-all duration-200"
-          >
-            + Add Laborer
-          </button>
-        </header>
+            <div className="flex flex-wrap items-center gap-3">
+                <button 
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="bg-accent-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-accent-secondary hover:-translate-y-0.5 shadow-lg shadow-accent-primary/20 transition-all duration-200"
+                >
+                    + Add Laborer
+                </button>
+            </div>
+        </div>
 
         {/* Search Filters */}
         <section className="bg-white/5 border border-border-subtle rounded-2xl p-6">

@@ -3,11 +3,17 @@ package com.antigravity.erp.modules.labor.service;
 import com.antigravity.erp.modules.labor.dto.LaborerDTO;
 import com.antigravity.erp.modules.labor.model.Laborer;
 import com.antigravity.erp.modules.labor.repository.LaborerRepository;
+import com.antigravity.erp.modules.attendance.model.AttendanceMuster;
+import com.antigravity.erp.modules.attendance.model.MonthlyPayroll;
+import com.antigravity.erp.modules.attendance.repository.AttendanceMusterRepository;
+import com.antigravity.erp.modules.attendance.repository.MonthlyPayrollRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,6 +22,12 @@ public class LaborerServiceImpl implements LaborerService {
 
     @Autowired
     private LaborerRepository laborerRepository;
+
+    @Autowired
+    private AttendanceMusterRepository attendanceMusterRepository;
+
+    @Autowired
+    private MonthlyPayrollRepository monthlyPayrollRepository;
 
     @Override
     public List<LaborerDTO> getAllLaborers() {
@@ -33,6 +45,7 @@ public class LaborerServiceImpl implements LaborerService {
     }
 
     @Override
+    @Transactional
     public LaborerDTO addLaborer(LaborerDTO laborerDTO) {
         String grNo = laborerDTO.getGrNo();
 
@@ -48,10 +61,34 @@ public class LaborerServiceImpl implements LaborerService {
 
         Laborer laborer = mapToEntity(laborerDTO);
         Laborer savedLaborer = laborerRepository.save(laborer);
+
+        // Create Muster and Payroll records for current month
+        LocalDate now = LocalDate.now();
+        int currentMonth = now.getMonthValue();
+        int currentYear = now.getYear();
+
+        AttendanceMuster muster = AttendanceMuster.builder()
+                .grNo(savedLaborer.getGrNo())
+                .month(currentMonth)
+                .year(currentYear)
+                .isActive(true)
+                .build();
+        attendanceMusterRepository.save(muster);
+
+        MonthlyPayroll payroll = MonthlyPayroll.builder()
+                .grNo(savedLaborer.getGrNo())
+                .month(currentMonth)
+                .year(currentYear)
+                .rate(laborerDTO.getSalaryPerDay())
+                .isActive(true)
+                .build();
+        monthlyPayrollRepository.save(payroll);
+
         return mapToDTO(savedLaborer);
     }
 
     @Override
+    @Transactional
     public LaborerDTO updateLaborer(String grNo, LaborerDTO laborerDTO) {
         Laborer existingLaborer = laborerRepository.findById(grNo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
@@ -74,11 +111,29 @@ public class LaborerServiceImpl implements LaborerService {
         existingLaborer.setPfNo(laborerDTO.getPfNo());
         existingLaborer.setIdProof(mapIdProofToEntity(laborerDTO.getIdProof()));
         existingLaborer.setBankDetails(mapBankDetailsToEntity(laborerDTO.getBankDetails()));
-        existingLaborer.setSalaryPerDay(laborerDTO.getSalaryPerDay());
         existingLaborer.setStatus(laborerDTO.getStatus());
         existingLaborer.setPhotoUrl(laborerDTO.getPhotoUrl());
 
         Laborer updatedLaborer = laborerRepository.save(existingLaborer);
+
+        // Update Muster and Payroll isActive status for current month based on laborer status
+        boolean isActive = laborerDTO.getStatus() == com.antigravity.erp.modules.labor.enums.LaborerStatus.ACTIVE;
+        LocalDate now = LocalDate.now();
+        int currentMonth = now.getMonthValue();
+        int currentYear = now.getYear();
+
+        attendanceMusterRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear).ifPresent(muster -> {
+            muster.setIsActive(isActive);
+            attendanceMusterRepository.save(muster);
+        });
+
+        monthlyPayrollRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear).ifPresent(payroll -> {
+            payroll.setIsActive(isActive);
+            // We do not update the rate here, just the isActive flag. 
+            // The rate is updated on rollover or manually via a dedicated payroll endpoint.
+            monthlyPayrollRepository.save(payroll);
+        });
+
         return mapToDTO(updatedLaborer);
     }
 
@@ -101,7 +156,6 @@ public class LaborerServiceImpl implements LaborerService {
                 .pfNo(laborer.getPfNo())
                 .idProof(mapIdProofToDTO(laborer.getIdProof()))
                 .bankDetails(mapBankDetailsToDTO(laborer.getBankDetails()))
-                .salaryPerDay(laborer.getSalaryPerDay())
                 .status(laborer.getStatus())
                 .photoUrl(laborer.getPhotoUrl())
                 .createdAt(laborer.getCreatedAt())
@@ -128,7 +182,6 @@ public class LaborerServiceImpl implements LaborerService {
                 .pfNo(dto.getPfNo())
                 .idProof(mapIdProofToEntity(dto.getIdProof()))
                 .bankDetails(mapBankDetailsToEntity(dto.getBankDetails()))
-                .salaryPerDay(dto.getSalaryPerDay())
                 .status(dto.getStatus())
                 .photoUrl(dto.getPhotoUrl())
                 .build();

@@ -278,7 +278,7 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
                                     {renderHeader(false)}
                                     <tbody className="bg-slate-950">
                                         {rows.map((row, idx) => (
-                                            <tr key={row.grNo} className={`hover:bg-emerald-500/5 transition-colors group h-9 ${idx % 2 === 0 ? 'bg-white/[0.01]' : ''}`}>
+                                            <tr key={row.grNo} className={`transition-colors group h-9 ${idx % 2 === 0 ? 'bg-white/[0.01]' : ''} ${row.isActive === false ? 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0' : 'hover:bg-emerald-500/5'}`}>
                                                 <td className="sticky left-0 z-10 bg-slate-950 px-3 py-1.5 text-slate-500 font-mono border-r border-b border-white/5 w-[60px] group-hover:bg-slate-900 transition-colors">{row.grNo}</td>
                                                 <td className="sticky left-[60px] z-10 bg-slate-950 px-3 py-1.5 font-medium text-slate-200 border-r-2 border-b border-emerald-500/30 w-[160px] shadow-[4px_0_12px_-2px_rgba(0,0,0,0.7)] group-hover:bg-slate-900 transition-colors">
                                                     <div className="flex flex-col truncate leading-tight">

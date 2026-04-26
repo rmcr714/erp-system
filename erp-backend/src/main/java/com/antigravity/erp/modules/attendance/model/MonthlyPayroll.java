@@ -6,8 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.antigravity.erp.modules.labor.model.Laborer;
+
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -37,4 +38,12 @@ public class MonthlyPayroll {
     private BigDecimal totalAdvance;
     private BigDecimal netBalance;
     private BigDecimal debitBalance;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gr_no", insertable = false, updatable = false)
+    private Laborer laborer;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
 }

@@ -8,6 +8,7 @@ import com.antigravity.erp.modules.attendance.repository.*;
 import com.antigravity.erp.modules.labor.enums.LaborerStatus;
 import com.antigravity.erp.modules.labor.service.LaborerService;
 import com.antigravity.erp.modules.labor.dto.LaborerDTO;
+import com.antigravity.erp.modules.labor.model.Laborer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,23 +29,28 @@ public class AttendanceService {
 
     @Transactional(readOnly = true)
     public List<MonthlyMusterRowDTO> getMonthlyMuster(Integer month, Integer year) {
-        List<LaborerDTO> laborers = getAttendanceLaborers();
         List<AttendanceMuster> musters = musterRepository.findByMonthAndYear(month, year);
+        if (musters.isEmpty()) {
+            return Collections.emptyList();
+        }
+
         List<MonthlyPayroll> payrolls = payrollRepository.findByMonthAndYear(month, year);
         
-        Map<String, AttendanceMuster> musterMap = musters.stream()
-                .collect(Collectors.toMap(AttendanceMuster::getGrNo, m -> m));
         Map<String, MonthlyPayroll> payrollMap = payrolls.stream()
                 .collect(Collectors.toMap(MonthlyPayroll::getGrNo, p -> p));
 
-        return laborers.stream().map(laborer -> {
-            AttendanceMuster muster = musterMap.get(laborer.getGrNo());
-            MonthlyPayroll payroll = payrollMap.get(laborer.getGrNo());
+        return musters.stream().map(muster -> {
+            MonthlyPayroll payroll = payrollMap.get(muster.getGrNo());
+            Laborer laborer = muster.getLaborer();
 
-            Map<Integer, Double> attendance = muster != null ? muster.getAttendanceData() : new HashMap<>();
+            String name = laborer != null ? laborer.getFullName() : "Unknown";
+            String designation = laborer != null ? laborer.getDesignation() : "Unknown";
+            Laborer.BankDetails bank = laborer != null ? laborer.getBankDetails() : null;
+
+            Map<Integer, Double> attendance = muster.getAttendanceData() != null ? muster.getAttendanceData() : new HashMap<>();
             BigDecimal currentRate = (payroll != null && payroll.getRate() != null) 
                                      ? payroll.getRate() 
-                                     : laborer.getSalaryPerDay();
+                                     : BigDecimal.ZERO;
 
             BigDecimal totalSalary = (payroll != null && payroll.getGrossSalary() != null) 
                                      ? payroll.getGrossSalary() 
@@ -64,12 +70,12 @@ public class AttendanceService {
                                   : BigDecimal.ZERO;
 
             return MonthlyMusterRowDTO.builder()
-                    .grNo(laborer.getGrNo())
-                    .name(laborer.getFullName())
-                    .designation(laborer.getDesignation())
-                    .bankName(laborer.getBankDetails() != null ? laborer.getBankDetails().getBankName() : "")
-                    .accountNo(laborer.getBankDetails() != null ? laborer.getBankDetails().getAccountNo() : "")
-                    .ifscCode(laborer.getBankDetails() != null ? laborer.getBankDetails().getIfscCode() : "")
+                    .grNo(muster.getGrNo())
+                    .name(name)
+                    .designation(designation)
+                    .bankName(bank != null ? bank.getBankName() : "")
+                    .accountNo(bank != null ? bank.getAccountNo() : "")
+                    .ifscCode(bank != null ? bank.getIfscCode() : "")
                     .salaryPerDay(currentRate)
                     .attendance(attendance)
                     .totalSalary(totalSalary)
@@ -78,8 +84,52 @@ public class AttendanceService {
                     .totalAdvance(totalAdv)
                     .closingBalance(balance)
                     .debitBalance(debitBal)
+                    .isActive(muster.getIsActive())
                     .build();
         }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void startMonth(Integer month, Integer year) {
+        List<AttendanceMuster> existing = musterRepository.findByMonthAndYear(month, year);
+        if (!existing.isEmpty()) {
+            return;
+        }
+
+        List<LaborerDTO> activeLaborers = getAttendanceLaborers();
+        Integer prevMonth = month == 1 ? 12 : month - 1;
+        Integer prevYear = month == 1 ? year - 1 : year;
+
+        Map<String, MonthlyPayroll> prevPayrolls = payrollRepository.findByMonthAndYear(prevMonth, prevYear)
+                .stream().collect(Collectors.toMap(MonthlyPayroll::getGrNo, p -> p));
+
+        for (LaborerDTO laborer : activeLaborers) {
+            String grNo = laborer.getGrNo();
+            
+            AttendanceMuster muster = AttendanceMuster.builder()
+                    .grNo(grNo)
+                    .month(month)
+                    .year(year)
+                    .attendanceData(new HashMap<>())
+                    .isActive(true)
+                    .build();
+            musterRepository.save(muster);
+
+            MonthlyPayroll prevPayroll = prevPayrolls.get(grNo);
+            BigDecimal rate = prevPayroll != null ? prevPayroll.getRate() : null;
+
+            MonthlyPayroll payroll = MonthlyPayroll.builder()
+                    .grNo(grNo)
+                    .month(month)
+                    .year(year)
+                    .rate(rate)
+                    .isActive(true)
+                    .siteAdvance(BigDecimal.ZERO)
+                    .onlineAdvance(BigDecimal.ZERO)
+                    .totalAdvance(BigDecimal.ZERO)
+                    .build();
+            payrollRepository.save(payroll);
+        }
     }
 
     @Transactional
@@ -251,16 +301,8 @@ public class AttendanceService {
                         .totalAdvance(BigDecimal.ZERO)
                         .build());
 
-        // Use profile rate if not set in payroll
-        if (payroll.getRate() == null) {
-            LaborerDTO laborer = laborerMap != null
-                    ? laborerMap.get(grNo)
-                    : getAttendanceLaborers().stream()
-                            .filter(l -> l.getGrNo().equals(grNo))
-                            .findFirst()
-                            .orElse(null);
-            if (laborer != null) payroll.setRate(laborer.getSalaryPerDay());
-        }
+        // Rate is strictly maintained in the payroll record now.
+        // It should either be set on month creation or manually via the rate update endpoint.
 
         // 1. Calculate Units and Gross
         Map<Integer, Double> attendanceData = muster != null ? muster.getAttendanceData() : new HashMap<>();

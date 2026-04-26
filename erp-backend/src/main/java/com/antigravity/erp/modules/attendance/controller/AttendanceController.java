@@ -26,6 +26,14 @@ public class AttendanceController {
         return ResponseEntity.ok(attendanceService.getMonthlyMuster(month, year));
     }
 
+    @PostMapping("/start-month")
+    public ResponseEntity<String> startMonth(
+            @RequestParam(name = "month") Integer month,
+            @RequestParam(name = "year") Integer year) {
+        attendanceService.startMonth(month, year);
+        return ResponseEntity.ok("Month started successfully");
+    }
+
     @PostMapping("/save")
     public ResponseEntity<String> saveAttendance(@RequestBody AttendanceSaveRequest request) {
         attendanceService.saveAttendance(

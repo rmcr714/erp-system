@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import com.antigravity.erp.modules.labor.model.Laborer;
+
 import java.util.Map;
 
 @Data
@@ -33,4 +35,12 @@ public class AttendanceMuster {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attendance_data", columnDefinition = "jsonb")
     private Map<Integer, Double> attendanceData;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gr_no", insertable = false, updatable = false)
+    private Laborer laborer;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
 }

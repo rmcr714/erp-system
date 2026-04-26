@@ -13,6 +13,7 @@ export interface MonthlyMusterRow {
     totalAdvance: number;
     closingBalance: number;
     debitBalance: number;
+    isActive?: boolean;
 }
 
 export interface AttendanceSaveRequest {
