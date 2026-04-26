@@ -149,9 +149,9 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
                 <th className="sticky left-0 z-40 bg-slate-900 p-3 text-left font-bold text-slate-400 uppercase border-r border-b border-white/10 w-[60px] min-w-[60px] shadow-[4px_0_12px_-2px_rgba(0,0,0,0.7)]">ID</th>
                 <th className="sticky left-[60px] z-40 bg-slate-900 p-3 text-left font-bold text-slate-400 uppercase border-r-2 border-b border-emerald-500/30 w-[160px] min-w-[160px] shadow-[4px_0_12px_-2px_rgba(0,0,0,0.7)]">Name</th>
                 
-                <th className="p-3 text-left font-bold text-slate-500 border-r border-b border-white/5 w-[140px] min-w-[140px] bg-slate-900/50">Bank</th>
-                <th className="p-3 text-left font-bold text-slate-500 border-r border-b border-white/5 w-[160px] min-w-[160px] bg-slate-900/50">Account No</th>
-                <th className="p-3 text-left font-bold text-slate-500 border-r border-b border-white/5 w-[110px] min-w-[110px] bg-slate-900/50">IFSC</th>
+                <th className="p-3 text-left font-bold text-sky-200 border-r border-b border-white/5 w-[140px] min-w-[140px] bg-slate-900/50">Bank</th>
+                <th className="p-3 text-left font-bold text-cyan-200 border-r border-b border-white/5 w-[160px] min-w-[160px] bg-slate-900/50">Account No</th>
+                <th className="p-3 text-left font-bold text-indigo-200 border-r border-b border-white/5 w-[110px] min-w-[110px] bg-slate-900/50">IFSC</th>
                 <th className="p-3 text-center font-bold text-sky-400 border-r border-b border-white/10 bg-slate-900/80 w-[100px] min-w-[100px]">Daily Rate</th>
 
                 {daysArray.map(day => {
@@ -287,9 +287,9 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
                                                     </div>
                                                 </td>
 
-                                                <td className="px-3 py-1.5 text-slate-400 border-r border-b border-white/5 w-[140px] truncate text-[11px]">{row.bankName}</td>
-                                                <td className="px-3 py-1.5 text-slate-400 font-mono border-r border-b border-white/5 w-[160px] text-[11px] truncate">{row.accountNo}</td>
-                                                <td className="px-3 py-1.5 text-slate-400 font-mono border-r border-b border-white/5 w-[110px] text-[11px] uppercase truncate">{row.ifscCode}</td>
+                                                <td className="px-3 py-1.5 text-sky-200 font-semibold border-r border-b border-white/5 w-[140px] truncate text-[12px]">{row.bankName}</td>
+                                                <td className="px-3 py-1.5 text-cyan-200 font-bold font-mono tracking-wide border-r border-b border-white/5 w-[160px] text-[12px] truncate bg-cyan-900/10">{row.accountNo}</td>
+                                                <td className="px-3 py-1.5 text-indigo-200 font-bold font-mono tracking-wider border-r border-b border-white/5 w-[110px] text-[12px] uppercase truncate bg-indigo-900/10">{row.ifscCode}</td>
                                                 
                                                 <td className="px-3 py-1.5 text-center border-r border-b border-white/10 bg-slate-900/30 w-[100px] text-sky-400 font-black text-[13px]">
                                                     ₹{row.salaryPerDay}

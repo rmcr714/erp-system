@@ -59,6 +59,9 @@ const AttendancePage: React.FC = () => {
     const currentDate = new Date();
     const isPastMonth = year < currentDate.getFullYear() || 
                        (year === currentDate.getFullYear() && month < currentDate.getMonth() + 1);
+    
+    const isFutureMonth = year > currentDate.getFullYear() || 
+                         (year === currentDate.getFullYear() && month > currentDate.getMonth() + 1);
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8 flex flex-col gap-4 md:gap-8 overflow-hidden">
@@ -139,9 +142,11 @@ const AttendancePage: React.FC = () => {
                             </button>
                         </>
                     ) : (
-                        <a href="#attendance/edit" className="px-5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition-colors">
-                            Edit Attendance
-                        </a>
+                        <div className="flex items-center gap-3">
+                            <a href="#attendance/edit" className="px-5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition-colors">
+                                Edit Attendance
+                            </a>
+                        </div>
                     )}
                 </div>
             </div>
@@ -163,10 +168,12 @@ const AttendancePage: React.FC = () => {
                             <p className="text-slate-500">
                                 {isPastMonth 
                                     ? "There is no historical attendance data for this month."
-                                    : "Attendance for this month hasn't been started yet."}
+                                    : isFutureMonth
+                                        ? `You cannot start attendance for future months. Please wait until ${monthNames[month - 1]} to start.`
+                                        : "Attendance for this month hasn't been started yet."}
                             </p>
                         </div>
-                        {!isPastMonth && (
+                        {!isPastMonth && !isFutureMonth && (
                             <button 
                                 onClick={handleStartMonth}
                                 disabled={startingMonth}

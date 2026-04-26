@@ -35,11 +35,31 @@ const PayrollPage: React.FC = () => {
     const [dirtyRows, setDirtyRows] = useState<Record<string, true>>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [startingMonth, setStartingMonth] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    const isEditMode = window.location.hash.startsWith('#payroll/edit');
+    const isPastMonth = useMemo(() => {
+        const currentDate = new Date();
+        return year < currentDate.getFullYear() || 
+               (year === currentDate.getFullYear() && month < currentDate.getMonth() + 1);
+    }, [month, year]);
+
+    const isFutureMonth = useMemo(() => {
+        const currentDate = new Date();
+        return year > currentDate.getFullYear() || 
+               (year === currentDate.getFullYear() && month > currentDate.getMonth() + 1);
+    }, [month, year]);
+
+    const isEditMode = !isPastMonth && window.location.hash.startsWith('#payroll/edit');
     const pageSize = 100;
+
+    // Force URL update if trying to edit past month
+    useEffect(() => {
+        if (isPastMonth && window.location.hash.startsWith('#payroll/edit')) {
+            window.location.hash = '#payroll';
+        }
+    }, [isPastMonth]);
 
     useEffect(() => {
         loadPayroll();
@@ -56,6 +76,19 @@ const PayrollPage: React.FC = () => {
             toast.error('Failed to load payroll');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleStartMonth = async () => {
+        setStartingMonth(true);
+        try {
+            await attendanceService.startMonth(month, year);
+            toast.success(`Payroll started for ${monthNames[month - 1]}`);
+            loadPayroll();
+        } catch (error) {
+            toast.error('Failed to start month');
+        } finally {
+            setStartingMonth(false);
         }
     };
 
@@ -137,8 +170,8 @@ const PayrollPage: React.FC = () => {
                 <th className="sticky left-0 z-30 bg-slate-900 p-3 text-left font-bold text-slate-400 uppercase border-r border-b border-white/10 w-[70px] min-w-[70px]">GR No</th>
                 <th className="sticky left-[70px] z-30 bg-slate-900 p-3 text-left font-bold text-slate-400 uppercase border-r-2 border-b border-emerald-500/30 w-[190px] min-w-[190px]">Name</th>
                 <th className="p-3 text-left font-bold text-slate-500 border-r border-b border-white/5 w-[150px] min-w-[150px]">Designation</th>
-                <th className="p-3 text-left font-bold text-slate-500 border-r border-b border-white/5 w-[150px] min-w-[150px]">Bank</th>
-                <th className="p-3 text-left font-bold text-slate-500 border-r border-b border-white/5 w-[120px] min-w-[120px]">IFSC</th>
+                <th className="p-3 text-left font-bold text-sky-200 border-r border-b border-white/5 w-[150px] min-w-[150px] bg-slate-900/50">Bank</th>
+                <th className="p-3 text-left font-bold text-indigo-200 border-r border-b border-white/5 w-[120px] min-w-[120px] bg-slate-900/50">IFSC</th>
                 <th className="p-3 text-right font-bold text-sky-400 border-r border-b border-white/10 w-[100px] min-w-[100px]">Units</th>
                 <th className="p-3 text-right font-bold text-sky-400 border-r border-b border-white/10 w-[120px] min-w-[120px]">Rate</th>
                 <th className="p-3 text-right font-bold text-emerald-400 border-r border-b border-white/10 w-[130px] min-w-[130px]">Gross</th>
@@ -218,9 +251,11 @@ const PayrollPage: React.FC = () => {
                             </button>
                         </>
                     ) : (
-                        <a href="#payroll/edit" className="px-5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition-colors">
-                            Edit Payroll
-                        </a>
+                        !isPastMonth && (
+                            <a href="#payroll/edit" className="px-5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition-colors">
+                                Edit Payroll
+                            </a>
+                        )
                     )}
                 </div>
             </div>
@@ -263,7 +298,28 @@ const PayrollPage: React.FC = () => {
                 {loading ? (
                     <div className="h-full min-h-[480px] flex items-center justify-center text-sky-400 font-bold">Loading Payroll...</div>
                 ) : data.length === 0 ? (
-                    <div className="h-full min-h-[480px] flex items-center justify-center text-slate-500 font-bold">No workers found</div>
+                    <div className="flex flex-col items-center justify-center h-full min-h-[480px] bg-white/5 border border-dashed border-white/10 rounded-2xl gap-4">
+                        <div className="text-6xl">💰</div>
+                        <div className="text-center">
+                            <h3 className="text-xl font-bold text-white">No Payroll Records for {monthNames[month - 1]} {year}</h3>
+                            <p className="text-slate-500">
+                                {isPastMonth 
+                                    ? "There is no historical payroll data for this month."
+                                    : isFutureMonth
+                                        ? `You cannot start payroll for future months. Please wait until ${monthNames[month - 1]} to start.`
+                                        : "Payroll for this month hasn't been started yet."}
+                            </p>
+                        </div>
+                        {!isPastMonth && !isFutureMonth && (
+                            <button 
+                                onClick={handleStartMonth}
+                                disabled={startingMonth}
+                                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-colors disabled:opacity-50"
+                            >
+                                {startingMonth ? 'Starting...' : `Start Payroll for ${monthNames[month - 1]}`}
+                            </button>
+                        )}
+                    </div>
                 ) : (
                     <div className="inline-block min-w-full align-middle">
                         {designations.map(designation => {
@@ -286,14 +342,14 @@ const PayrollPage: React.FC = () => {
                                         {renderTableHeader()}
                                         <tbody>
                                             {rows.map((row, index) => (
-                                                <tr key={row.grNo} className={`h-12 hover:bg-emerald-500/5 ${index % 2 === 0 ? 'bg-white/[0.01]' : ''}`}>
+                                                <tr key={row.grNo} className={`h-12 transition-colors group ${index % 2 === 0 ? 'bg-white/[0.01]' : ''} ${row.isActive === false ? 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0' : 'hover:bg-emerald-500/5'}`}>
                                                     <td className="sticky left-0 z-20 bg-slate-950 p-3 text-slate-500 font-mono border-r border-b border-white/5 w-[70px]">{row.grNo}</td>
                                                     <td className="sticky left-[70px] z-20 bg-slate-950 p-3 border-r-2 border-b border-emerald-500/30 w-[190px]">
                                                         <div className="font-bold text-slate-100 truncate">{row.name}</div>
                                                     </td>
                                                     <td className="p-3 text-slate-400 border-r border-b border-white/5 w-[150px] truncate">{row.designation}</td>
-                                                    <td className="p-3 text-slate-400 border-r border-b border-white/5 w-[150px] truncate">{row.bankName}</td>
-                                                    <td className="p-3 text-slate-400 font-mono border-r border-b border-white/5 w-[120px] truncate uppercase">{row.ifscCode}</td>
+                                                    <td className="p-3 text-sky-200 font-semibold text-[12px] border-r border-b border-white/5 w-[150px] truncate">{row.bankName}</td>
+                                                    <td className="p-3 text-indigo-200 font-bold font-mono tracking-wider text-[12px] border-r border-b border-white/5 w-[120px] truncate uppercase bg-indigo-900/10">{row.ifscCode}</td>
                                                     <td className="p-3 text-right text-sky-400 font-black border-r border-b border-white/10 w-[100px]">{totalUnits(row)}</td>
                                                     <td className="p-2 text-right border-r border-b border-white/10 w-[120px]">
                                                         {isEditMode ? (
