@@ -122,17 +122,46 @@ public class LaborerServiceImpl implements LaborerService {
         int currentMonth = now.getMonthValue();
         int currentYear = now.getYear();
 
-        attendanceMusterRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear).ifPresent(muster -> {
-            muster.setIsActive(isActive);
-            attendanceMusterRepository.save(muster);
-        });
+        attendanceMusterRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear)
+                .ifPresentOrElse(
+                        muster -> {
+                            muster.setIsActive(isActive);
+                            attendanceMusterRepository.save(muster);
+                        },
+                        () -> {
+                            if (isActive) {
+                                AttendanceMuster muster = AttendanceMuster.builder()
+                                        .grNo(grNo)
+                                        .month(currentMonth)
+                                        .year(currentYear)
+                                        .isActive(true)
+                                        .build();
+                                attendanceMusterRepository.save(muster);
+                            }
+                        }
+                );
 
-        monthlyPayrollRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear).ifPresent(payroll -> {
-            payroll.setIsActive(isActive);
-            // We do not update the rate here, just the isActive flag. 
-            // The rate is updated on rollover or manually via a dedicated payroll endpoint.
-            monthlyPayrollRepository.save(payroll);
-        });
+        monthlyPayrollRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear)
+                .ifPresentOrElse(
+                        payroll -> {
+                            payroll.setIsActive(isActive);
+                            // We do not update the rate here, just the isActive flag. 
+                            // The rate is updated on rollover or manually via a dedicated payroll endpoint.
+                            monthlyPayrollRepository.save(payroll);
+                        },
+                        () -> {
+                            if (isActive) {
+                                MonthlyPayroll payroll = MonthlyPayroll.builder()
+                                        .grNo(grNo)
+                                        .month(currentMonth)
+                                        .year(currentYear)
+                                        .rate(laborerDTO.getSalaryPerDay())
+                                        .isActive(true)
+                                        .build();
+                                monthlyPayrollRepository.save(payroll);
+                            }
+                        }
+                );
 
         return mapToDTO(updatedLaborer);
     }

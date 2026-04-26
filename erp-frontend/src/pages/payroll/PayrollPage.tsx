@@ -199,13 +199,13 @@ const PayrollPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setSidebarOpen(true)}
-                            className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                            className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all group"
                             aria-label="Open menu"
                         >
-                            <span className="flex flex-col gap-1">
-                                <span className="block h-0.5 w-5 bg-current"></span>
-                                <span className="block h-0.5 w-5 bg-current"></span>
-                                <span className="block h-0.5 w-5 bg-current"></span>
+                            <span className="flex flex-col gap-[6px] items-center">
+                                <span className="block h-[3px] w-6 bg-current rounded-full group-hover:w-6 transition-all duration-300"></span>
+                                <span className="block h-[3px] w-4 bg-current rounded-full group-hover:w-6 transition-all duration-300"></span>
+                                <span className="block h-[3px] w-6 bg-current rounded-full group-hover:w-6 transition-all duration-300"></span>
                             </span>
                         </button>
                         <a href="#dashboard" className="group flex items-center gap-2 w-fit px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all text-sm font-bold">

@@ -132,13 +132,13 @@ const LaborersPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-accent-primary hover:text-white hover:bg-accent-primary hover:shadow-[0_0_15px_rgba(14,165,233,0.4)] transition-all duration-300 group"
+                        className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-primary/10 border border-accent-primary/30 text-accent-primary hover:text-white hover:bg-accent-primary hover:shadow-[0_0_15px_rgba(14,165,233,0.4)] transition-all duration-300 group"
                         aria-label="Open menu"
                     >
-                        <span className="flex flex-col gap-[4px] items-center">
-                            <span className="block h-[2px] w-5 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
-                            <span className="block h-[2px] w-3 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
-                            <span className="block h-[2px] w-5 bg-current rounded-full group-hover:w-5 transition-all duration-300"></span>
+                        <span className="flex flex-col gap-[6px] items-center">
+                            <span className="block h-[3px] w-6 bg-current rounded-full group-hover:w-6 transition-all duration-300"></span>
+                            <span className="block h-[3px] w-4 bg-current rounded-full group-hover:w-6 transition-all duration-300"></span>
+                            <span className="block h-[3px] w-6 bg-current rounded-full group-hover:w-6 transition-all duration-300"></span>
                         </span>
                     </button>
                     <a 

@@ -28,7 +28,7 @@ const LaborerTable: React.FC<LaborerTableProps> = ({ laborers, loading, onViewPr
             <tr><td colSpan={7} className="p-10 text-center text-text-secondary animate-pulse">Loading data...</td></tr>
           ) : laborers.length > 0 ? (
             laborers.map((worker) => (
-              <tr key={worker.grNo} className="hover:bg-glass transition-colors group">
+              <tr key={worker.grNo} className={`hover:bg-glass transition-colors group ${worker.status === 'Inactive' ? 'opacity-50 grayscale' : ''}`}>
                 <td className="p-5 font-bold text-accent-primary">{worker.grNo}</td>
                 <td className="p-5 font-medium">{worker.fullName}</td>
                 <td className="p-5 text-text-secondary whitespace-nowrap">
