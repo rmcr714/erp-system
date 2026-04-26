@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Sidebar from '../components/common/Sidebar';
-import StatGrid from '../components/common/StatGrid';
 
 const Dashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,8 +33,10 @@ const Dashboard: React.FC = () => {
                         </span>
                     </button>
                 </div>
-                <h1 className="text-4xl font-black font-outfit text-text-primary tracking-tight flex items-center gap-3">
-                    Dashboard
+                <h1 className="text-5xl font-black font-outfit tracking-tight flex items-center gap-3">
+                    <span className="bg-gradient-to-r from-sky-400 via-indigo-400 to-emerald-400 bg-clip-text text-transparent drop-shadow-sm">
+                        AD Group ERP
+                    </span>
                 </h1>
                 <p className="text-text-secondary text-lg">
                     Welcome back! Here's an overview of your ERP system.
@@ -43,37 +44,72 @@ const Dashboard: React.FC = () => {
             </div>
         </div>
 
-        <StatGrid 
-          totalLaborers="3,000" 
-          activeToday="2,842" 
-          dailyPayroll="₹12.4L" 
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-4">
+            {/* Laborers Card */}
+            <a href="#laborers" className="group relative flex flex-col justify-between p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-sky-500/50 transition-all duration-500 overflow-hidden min-h-[240px]">
+                <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex flex-col gap-4">
+                    <div className="h-14 w-14 rounded-2xl bg-sky-500/20 flex items-center justify-center text-sky-400 text-3xl group-hover:scale-110 transition-transform duration-500">
+                        👷
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-sky-400 transition-colors">Laborer Directory</h2>
+                        <p className="text-slate-400 text-lg leading-relaxed">Manage workforce, onboarding, bank accounts, and active status.</p>
+                    </div>
+                </div>
+                <div className="relative z-10 flex items-center gap-2 text-sky-400 font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 mt-4">
+                    Open Directory &rarr;
+                </div>
+            </a>
 
-        <section className="bg-bg-card border border-border-subtle rounded-2xl p-8">
-          <h2 className="text-2xl font-bold text-text-primary mb-4">Quick Links</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <a href="#laborers" className="p-6 rounded-xl bg-white/5 hover:bg-white/10 border border-border-subtle transition-all hover:-translate-y-1">
-              <div className="text-3xl mb-2">👷</div>
-              <h3 className="font-bold text-text-primary">Manage Laborers</h3>
-              <p className="text-text-secondary text-sm mt-1">Add, view, and manage all laborers</p>
+            {/* Attendance Card */}
+            <a href="#attendance" className="group relative flex flex-col justify-between p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition-all duration-500 overflow-hidden min-h-[240px]">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex flex-col gap-4">
+                    <div className="h-14 w-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-3xl group-hover:scale-110 transition-transform duration-500">
+                        📅
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-emerald-400 transition-colors">Attendance Muster</h2>
+                        <p className="text-slate-400 text-lg leading-relaxed">Track daily presence, log units, and finalize monthly attendance.</p>
+                    </div>
+                </div>
+                <div className="relative z-10 flex items-center gap-2 text-emerald-400 font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 mt-4">
+                    Log Attendance &rarr;
+                </div>
             </a>
-            <a href="#attendance" className="p-6 rounded-xl bg-white/5 hover:bg-white/10 border border-border-subtle transition-all hover:-translate-y-1">
-              <div className="text-3xl mb-2">📅</div>
-              <h3 className="font-bold text-text-primary">Attendance</h3>
-              <p className="text-text-secondary text-sm mt-1">Track daily attendance records</p>
+
+            {/* Payroll Card */}
+            <a href="#payroll" className="group relative flex flex-col justify-between p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 transition-all duration-500 overflow-hidden min-h-[240px]">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex flex-col gap-4">
+                    <div className="h-14 w-14 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 text-3xl group-hover:scale-110 transition-transform duration-500">
+                        💰
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">Monthly Payroll</h2>
+                        <p className="text-slate-400 text-lg leading-relaxed">Calculate wages, process advances, and manage closing balances.</p>
+                    </div>
+                </div>
+                <div className="relative z-10 flex items-center gap-2 text-amber-400 font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 mt-4">
+                    Process Payroll &rarr;
+                </div>
             </a>
-            <a href="#payroll" className="p-6 rounded-xl bg-white/5 hover:bg-white/10 border border-border-subtle transition-all hover:-translate-y-1">
-              <div className="text-3xl mb-2">💰</div>
-              <h3 className="font-bold text-text-primary">Payroll</h3>
-              <p className="text-text-secondary text-sm mt-1">Manage payments and salary</p>
+            
+            {/* Settings Card */}
+            <a href="#settings" className="group relative flex flex-col sm:flex-row justify-between sm:items-center p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-slate-500/50 transition-all duration-500 overflow-hidden md:col-span-2 xl:col-span-3">
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="relative z-10 flex flex-row items-center gap-6">
+                    <div className="h-16 w-16 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400 text-3xl group-hover:rotate-90 transition-transform duration-700">
+                        ⚙️
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-white group-hover:text-slate-300 transition-colors">System Settings</h2>
+                        <p className="text-slate-400 text-lg mt-1">Configure project sites, roles, and administrative options.</p>
+                    </div>
+                </div>
             </a>
-            <a href="#settings" className="p-6 rounded-xl bg-white/5 hover:bg-white/10 border border-border-subtle transition-all hover:-translate-y-1">
-              <div className="text-3xl mb-2">⚙️</div>
-              <h3 className="font-bold text-text-primary">Settings</h3>
-              <p className="text-text-secondary text-sm mt-1">Configure system settings</p>
-            </a>
-          </div>
-        </section>
+        </div>
       </main>
     </div>
   );

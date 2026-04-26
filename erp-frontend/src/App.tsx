@@ -60,7 +60,9 @@ function App() {
           },
         }}
       />
-      {renderPage()}
+      <div key={currentPage} className="animate-page-transition">
+        {renderPage()}
+      </div>
     </>
   );
 }
