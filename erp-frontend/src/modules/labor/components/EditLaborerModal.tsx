@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Laborer } from '../types/laborer';
 import { laborService } from '../services/laborService';
 import toast from 'react-hot-toast';
@@ -28,7 +28,7 @@ const REQUIRED_FIELDS = [
   'bankDetails.bankName', 'bankDetails.accountNo', 'bankDetails.ifscCode'
 ];
 
-type ScanState = 'idle' | 'loading' | 'success' | 'error';
+
 
 const EMPTY_FORM: Partial<Laborer> = {
   designation: 'Unskilled',
@@ -60,10 +60,7 @@ const EditLaborerModal: React.FC<EditLaborerModalProps> = ({ isOpen, onClose, la
 
   // ── Form Helpers ───────────────────────────────────────────────────────────
 
-  const clearForm = () => {
-    setFormData(EMPTY_FORM);
-    setErrors(new Set());
-  };
+
 
   const handleInputChange = (field: string, value: unknown) => {
     setErrors(prev => {
