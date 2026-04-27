@@ -172,6 +172,7 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
                     );
                 })}
                 
+                <th className="p-3 text-center font-bold text-purple-400 border-r border-b border-white/10 bg-slate-900/80 w-[100px] min-w-[100px]">Total Units</th>
                 <th className="p-3 text-right font-bold text-emerald-400 border-r border-b border-white/10 bg-slate-900 w-[110px] min-w-[110px]">Gross Sal.</th>
                 <th className="p-3 text-right font-bold text-rose-400 border-r border-b border-white/10 bg-slate-900 w-[100px] min-w-[100px]">Site Adv.</th>
                 <th className="p-3 text-right font-bold text-amber-400 border-r border-b border-white/10 bg-slate-900 w-[100px] min-w-[100px]">Online Adv.</th>
@@ -328,6 +329,7 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
                                                     );
                                                 })}
 
+                                                <td className="px-3 py-1.5 text-center font-black text-purple-400 border-r border-b border-white/10 w-[100px] bg-purple-500/5 text-[13px]">{Object.values(row.attendance).reduce((a, b) => a + b, 0)}</td>
                                                 <td className="px-3 py-1.5 text-right font-black text-emerald-400 border-r border-b border-white/10 w-[110px] bg-emerald-500/5">₹{row.totalSalary.toLocaleString()}</td>
                                                 <td className="px-3 py-1.5 text-right font-bold text-rose-400/70 border-r border-b border-white/10 w-[100px] text-[11px]">₹{row.siteAdvance.toLocaleString()}</td>
                                                 <td className="px-3 py-1.5 text-right font-bold text-amber-400/70 border-r border-b border-white/10 w-[100px] text-[11px]">₹{row.onlineAdvance.toLocaleString()}</td>
