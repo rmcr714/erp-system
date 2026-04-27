@@ -296,12 +296,11 @@ const AttendanceReportPage: React.FC = () => {
                                                         ))}
                                                         <th className="px-4 py-2 text-center border-l border-white/5 text-indigo-400 font-black w-16">Total</th>
                                                         <th className="px-4 py-2 text-right border-l border-white/5 w-24">Gross</th>
-                                                        <th className="px-4 py-2 text-right w-20 text-rose-400">Adv</th>
+                                                        <th className="px-4 py-2 text-right w-20 text-rose-400">Site Adv</th>
+                                                        <th className="px-4 py-2 text-right w-20 text-rose-400">Online Adv</th>
+                                                        <th className="px-4 py-2 text-right w-20 text-rose-400 font-black">Total Adv</th>
                                                         <th className="px-4 py-2 text-right w-20 text-orange-400">Debit</th>
                                                         <th className="px-4 py-2 text-right w-24 text-emerald-400 font-black">Net Pay</th>
-                                                        <th className="px-4 py-2 text-left w-32 border-l border-white/5">Bank Name</th>
-                                                        <th className="px-4 py-2 text-left w-40">Account No</th>
-                                                        <th className="px-4 py-2 text-left w-24">IFSC</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-white/5">
@@ -342,6 +341,12 @@ const AttendanceReportPage: React.FC = () => {
                                                                 ₹{row.totalSalary?.toLocaleString() || 0}
                                                             </td>
                                                             <td className="px-4 py-2 text-right font-mono text-rose-400 text-xs">
+                                                                ₹{row.siteAdvance?.toLocaleString() || 0}
+                                                            </td>
+                                                            <td className="px-4 py-2 text-right font-mono text-rose-400 text-xs">
+                                                                ₹{row.onlineAdvance?.toLocaleString() || 0}
+                                                            </td>
+                                                            <td className="px-4 py-2 text-right font-mono text-rose-500 text-xs font-black">
                                                                 ₹{row.totalAdvance?.toLocaleString() || 0}
                                                             </td>
                                                             <td className="px-4 py-2 text-right font-mono text-orange-400 text-xs">
