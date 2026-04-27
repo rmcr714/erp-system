@@ -3,6 +3,7 @@ import LaborersPage from './pages/LaborersPage';
 import AttendancePage from './pages/attendance/AttendancePage';
 import PayrollPage from './pages/payroll/PayrollPage';
 import ReportsPage from './pages/reports/ReportsPage';
+import AnalyticsPage from './pages/reports/AnalyticsPage';
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 
@@ -30,6 +31,9 @@ function App() {
     }
     if (currentPage.startsWith('payroll')) {
       return <PayrollPage />;
+    }
+    if (currentPage.startsWith('reports/analytics')) {
+      return <AnalyticsPage />;
     }
     if (currentPage.startsWith('report')) {
       return <ReportsPage />;

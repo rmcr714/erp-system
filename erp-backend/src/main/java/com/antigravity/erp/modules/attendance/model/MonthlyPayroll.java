@@ -16,7 +16,10 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Entity
 @IdClass(MonthlyPayrollId.class)
-@Table(name = "monthly_payroll")
+@Table(name = "monthly_payroll",
+       indexes = {
+           @Index(name = "idx_payroll_analytics", columnList = "year, month")
+       })
 public class MonthlyPayroll {
     @Id
     @Column(name = "gr_no", nullable = false)

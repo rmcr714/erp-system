@@ -69,7 +69,7 @@ const ReportsPage: React.FC = () => {
                     </div>
 
                     {/* Analytics Card */}
-                    <div className="group relative flex flex-col justify-between p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-pink-500/50 transition-all duration-500 overflow-hidden min-h-[240px] cursor-pointer">
+                    <a href="#reports/analytics" className="group relative flex flex-col justify-between p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-pink-500/50 transition-all duration-500 overflow-hidden min-h-[240px] cursor-pointer">
                         <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="relative z-10 flex flex-col gap-4">
                             <div className="h-14 w-14 rounded-2xl bg-pink-500/20 flex items-center justify-center text-pink-400 text-3xl group-hover:scale-110 transition-transform duration-500">
@@ -83,7 +83,7 @@ const ReportsPage: React.FC = () => {
                         <div className="relative z-10 flex items-center gap-2 text-pink-400 font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 mt-4">
                             View Analytics &rarr;
                         </div>
-                    </div>
+                    </a>
                 </div>
             </main>
         </div>
