@@ -266,8 +266,7 @@ const AnalyticsPage: React.FC = () => {
                                         <YAxis stroke="#64748b" tickFormatter={(val) => `₹${val/1000}k`} />
                                         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                                         <Tooltip 
-                                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }}
-                                            itemStyle={{ color: '#e2e8f0', fontWeight: 'bold' }}
+                                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
                                             formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, '']}
                                         />
                                         <Legend />
@@ -277,8 +276,8 @@ const AnalyticsPage: React.FC = () => {
                                                 <Bar 
                                                     key={desig}
                                                     dataKey={desig} 
-                                                    stackId="a"
                                                     fill={colors[i % colors.length]} 
+                                                    radius={[4, 4, 0, 0]}
                                                 />
                                             ))
                                         ) : (

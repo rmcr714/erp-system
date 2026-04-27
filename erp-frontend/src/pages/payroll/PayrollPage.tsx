@@ -24,7 +24,7 @@ const recalculateRow = (row: MonthlyMusterRow): MonthlyMusterRow => {
         ...row,
         totalSalary: grossSalary,
         totalAdvance,
-        closingBalance: Math.max(grossSalary - totalAdvance - row.debitBalance, 0)
+        closingBalance: grossSalary - totalAdvance - (row.debitBalance || 0)
     };
 };
 
@@ -109,6 +109,13 @@ const PayrollPage: React.FC = () => {
 
     const designations = useMemo(() => Object.keys(groupedData).sort(), [groupedData]);
     const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+
+    const scrollToSection = (designation: string) => {
+        const element = document.getElementById(`section-${designation}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
 
     const totals = useMemo(() => {
         return data.reduce(
@@ -279,22 +286,38 @@ const PayrollPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex-shrink-0 border border-white/10 rounded-lg bg-slate-900/80 flex items-center justify-between p-3">
-                <div className="text-[11px] font-black uppercase tracking-widest text-slate-500">
-                    {data.length} Workers - {Object.keys(dirtyRows).length} Edited
+            <div className="flex-shrink-0 border border-white/10 rounded-lg bg-slate-900/80 flex flex-col divide-y divide-white/5">
+                <div className="flex items-center justify-between p-3">
+                    <div className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+                        {data.length} Workers - {Object.keys(dirtyRows).length} Edited
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30 text-sm font-bold">
+                            Prev
+                        </button>
+                        <span className="text-sm text-slate-400 font-mono px-2">Page {currentPage} of {totalPages}</span>
+                        <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30 text-sm font-bold">
+                            Next
+                        </button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30 text-sm font-bold">
-                        Prev
-                    </button>
-                    <span className="text-sm text-slate-400 font-mono px-2">Page {currentPage} of {totalPages}</span>
-                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30 text-sm font-bold">
-                        Next
-                    </button>
+
+                {/* Designation Quick Jump */}
+                <div className="px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-2 whitespace-nowrap">Jump To:</span>
+                    {designations.map(desig => (
+                        <button
+                            key={desig}
+                            onClick={() => scrollToSection(desig)}
+                            className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-bold text-slate-400 hover:bg-sky-500/20 hover:text-sky-400 hover:border-sky-500/30 transition-all whitespace-nowrap uppercase tracking-wider"
+                        >
+                            {desig}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            <div className="flex-1 min-h-[480px] overflow-auto custom-scrollbar border border-white/10 rounded-lg bg-slate-950">
+            <div className="flex-1 min-h-[480px] overflow-y-auto overflow-x-hidden custom-scrollbar border border-white/10 rounded-lg bg-slate-950">
                 {loading ? (
                     <div className="h-full min-h-[480px] flex items-center justify-center text-sky-400 font-bold">Loading Payroll...</div>
                 ) : data.length === 0 ? (
@@ -321,11 +344,11 @@ const PayrollPage: React.FC = () => {
                         )}
                     </div>
                 ) : (
-                    <div className="inline-block min-w-full align-middle">
+                    <div className="w-full">
                         {designations.map(designation => {
                             const rows = groupedData[designation];
                             return (
-                                <div key={designation} className="mb-10">
+                                <div key={designation} id={`section-${designation}`} className="mb-10 w-full overflow-x-auto custom-scrollbar">
                                     <div className="sticky left-0 z-30 bg-slate-900/90 border-y border-white/10 px-5 py-3">
                                         <div className="flex items-center justify-between min-w-[900px]">
                                             <div>

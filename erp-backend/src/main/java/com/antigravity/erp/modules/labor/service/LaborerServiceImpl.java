@@ -71,6 +71,7 @@ public class LaborerServiceImpl implements LaborerService {
                 .grNo(savedLaborer.getGrNo())
                 .month(currentMonth)
                 .year(currentYear)
+                .attendanceData(new java.util.HashMap<>())
                 .isActive(true)
                 .build();
         attendanceMusterRepository.save(muster);

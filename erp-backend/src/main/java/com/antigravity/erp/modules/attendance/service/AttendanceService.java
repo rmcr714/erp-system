@@ -271,7 +271,9 @@ public class AttendanceService {
         AttendanceMuster muster = musterRepository.findByGrNoAndMonthAndYear(grNo, month, year).orElse(null);
         MonthlyPayroll payroll = getOrCreatePayroll(grNo, month, year);
 
-        Map<Integer, Double> attendanceData = muster != null ? muster.getAttendanceData() : new HashMap<>();
+        Map<Integer, Double> attendanceData = (muster != null && muster.getAttendanceData() != null) 
+                ? muster.getAttendanceData() 
+                : new HashMap<>();
         double totalUnits = attendanceData.values().stream()
                 .filter(Objects::nonNull)
                 .mapToDouble(Double::doubleValue)
@@ -286,7 +288,7 @@ public class AttendanceService {
         payroll.setTotalUnits(BigDecimal.valueOf(totalUnits));
         payroll.setGrossSalary(grossSalary);
         payroll.setTotalAdvance(totalAdvance);
-        payroll.setNetBalance(grossSalary.subtract(totalAdvance).subtract(debitBalance).max(BigDecimal.ZERO));
+        payroll.setNetBalance(grossSalary.subtract(totalAdvance).subtract(debitBalance));
         payroll.setDebitBalance(debitBalance);
         payrollRepository.save(payroll);
     }
@@ -311,7 +313,9 @@ public class AttendanceService {
         // It should either be set on month creation or manually via the rate update endpoint.
 
         // 1. Calculate Units and Gross
-        Map<Integer, Double> attendanceData = muster != null ? muster.getAttendanceData() : new HashMap<>();
+        Map<Integer, Double> attendanceData = (muster != null && muster.getAttendanceData() != null) 
+                ? muster.getAttendanceData() 
+                : new HashMap<>();
         double totalUnits = attendanceData.values().stream()
                 .filter(Objects::nonNull)
                 .mapToDouble(Double::doubleValue)
@@ -328,7 +332,7 @@ public class AttendanceService {
         BigDecimal totalAdv = siteAdv.add(onlineAdv);
 
         BigDecimal debitBalance = payroll.getDebitBalance() != null ? payroll.getDebitBalance() : BigDecimal.ZERO;
-        BigDecimal netBalance = grossSalary.subtract(totalAdv).subtract(debitBalance).max(BigDecimal.ZERO);
+        BigDecimal netBalance = grossSalary.subtract(totalAdv).subtract(debitBalance);
 
         // 4. Update Payroll Record
         payroll.setTotalUnits(BigDecimal.valueOf(totalUnits));
@@ -388,7 +392,8 @@ public class AttendanceService {
 
     private List<LaborerDTO> getAttendanceLaborers() {
         return laborerService.getAllLaborers().stream()
-                .filter(laborer -> laborer.getStatus() != LaborerStatus.INACTIVE)
+                .filter(l -> l.getStatus() == com.antigravity.erp.modules.labor.enums.LaborerStatus.ACTIVE || 
+                            l.getStatus() == com.antigravity.erp.modules.labor.enums.LaborerStatus.ON_LEAVE)
                 .collect(Collectors.toList());
     }
 }

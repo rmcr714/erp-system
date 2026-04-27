@@ -15,6 +15,67 @@ export interface AttendanceMasterGridHandle {
     saveAllChanges: () => Promise<void>;
 }
 
+const GridInput = ({ 
+    initialValue, 
+    isEditMode, 
+    onChange 
+}: { 
+    initialValue: number; 
+    isEditMode: boolean; 
+    onChange: (val: string) => void;
+}) => {
+    const [localValue, setLocalValue] = useState(initialValue === 0 ? '' : initialValue.toString());
+
+    // Sync with external changes (like month switches)
+    useEffect(() => {
+        setLocalValue(initialValue === 0 ? '' : initialValue.toString());
+    }, [initialValue]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        // Allow only numbers and a single decimal point
+        if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+            setLocalValue(val);
+            // Only sync to parent if it's a complete number
+            if (val !== '' && !val.endsWith('.')) {
+                onChange(val);
+            } else if (val === '') {
+                onChange('0');
+            }
+        }
+    };
+
+    const handleBlur = () => {
+        // Final sync on blur to catch things like "2."
+        if (localValue.endsWith('.')) {
+            const fixed = localValue.slice(0, -1);
+            setLocalValue(fixed);
+            onChange(fixed || '0');
+        } else {
+            onChange(localValue || '0');
+        }
+    };
+
+    return (
+        <input 
+            type="text"
+            value={localValue}
+            readOnly={!isEditMode}
+            className={`w-full h-full bg-transparent text-center focus:outline-none transition-all text-[16px] font-black ${
+                isEditMode ? 'focus:bg-white/10 focus:text-white focus:ring-inset focus:ring-1 focus:ring-emerald-500 cursor-text' : 'cursor-default'
+            } ${
+                parseFloat(localValue) > 0 ? 'text-emerald-400' : 'text-slate-600'
+            }`}
+            placeholder="-"
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+            }}
+        />
+    );
+};
+
 const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMasterGridProps>(({ 
     month, 
     year, 
@@ -56,16 +117,14 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
                 const totalUnits = Object.values(newAttendance).reduce((a, b) => a + b, 0);
                 const newTotalSalary = totalUnits * row.salaryPerDay;
                 const totalAdvance = row.siteAdvance + row.onlineAdvance;
-                const newClosingBalance = Math.max(newTotalSalary - totalAdvance, 0);
-                const newDebitBalance = Math.max(totalAdvance - newTotalSalary, 0);
+                const newClosingBalance = newTotalSalary - totalAdvance - (row.debitBalance || 0);
 
                 return { 
                     ...row, 
                     attendance: newAttendance,
                     totalSalary: newTotalSalary,
                     totalAdvance,
-                    closingBalance: newClosingBalance,
-                    debitBalance: newDebitBalance
+                    closingBalance: newClosingBalance
                 };
             }
             return row;
@@ -79,7 +138,6 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
             }
         }));
         
-        // Mark as unsaved
         setSyncStatus('idle');
     };
 
@@ -233,8 +291,9 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
             </div>
 
             {/* Grid Container */}
-            <div ref={scrollContainerRef} className="flex-1 overflow-auto custom-scrollbar relative bg-slate-950 pb-20">
-                <div className="inline-block min-w-full align-middle">
+            {/* Main Grid Section - Only vertical scroll now */}
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-slate-950 pb-20">
+                <div className="w-full">
                     {designations.map((desig) => {
                         const rows = groupedData[desig];
                         const sectionGross = rows.reduce((sum, r) => sum + r.totalSalary, 0);
@@ -242,7 +301,7 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
                         const sectionBalance = rows.reduce((sum, r) => sum + r.closingBalance, 0);
 
                         return (
-                            <div key={desig} id={`section-${desig}`} className="mb-20">
+                            <div key={desig} id={`section-${desig}`} className="mb-20 w-full overflow-x-auto custom-scrollbar">
                                 {/* Large Section Banner */}
                                 <div className="sticky top-0 z-40 w-full mb-2">
                                     <div className="sticky left-0 bg-gradient-to-r from-sky-900/40 to-slate-950/95 backdrop-blur-md border-y border-white/10 px-4 py-2 flex justify-between items-center w-[calc(100vw-2rem)] md:w-[calc(100vw-4rem)] min-w-[900px] overflow-hidden shadow-[0_4px_14px_rgba(0,0,0,0.35)]">
@@ -306,24 +365,10 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
                                                         <td key={day} className={`border-r border-b border-white/5 p-0 text-center transition-all w-[40px] 
                                                             ${val > 0 ? 'bg-emerald-500/10' : ''} 
                                                             ${isToday ? 'bg-sky-500/10 ring-inset ring-1 ring-sky-500/30' : ''}`}>
-                                                            <input 
-                                                                type="text"
-                                                                value={val === 0 ? '' : val}
-                                                                readOnly={!isEditMode}
-                                                                className={`w-full h-full bg-transparent text-center focus:outline-none transition-all text-[16px] font-black ${
-                                                                    isEditMode ? 'focus:bg-white/10 focus:text-white focus:ring-inset focus:ring-1 focus:ring-emerald-500 cursor-text' : 'cursor-default'
-                                                                } ${
-                                                                    val > 0 ? 'text-emerald-400' : 'text-slate-600'
-                                                                }`}
-                                                                placeholder="-"
-                                                                onChange={(e) => {
-                                                                    // Just update local state, don't save yet
-                                                                    const newVal = e.target.value;
-                                                                    handleCellChange(row.grNo, day, newVal);
-                                                                }}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                                                                }}
+                                                            <GridInput 
+                                                                initialValue={val}
+                                                                isEditMode={isEditMode}
+                                                                onChange={(newVal) => handleCellChange(row.grNo, day, newVal)}
                                                             />
                                                         </td>
                                                     );
