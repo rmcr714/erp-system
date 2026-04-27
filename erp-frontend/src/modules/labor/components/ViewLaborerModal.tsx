@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Laborer } from '../types/laborer';
+import { exportLaborerToExcel } from '../utils/excelExport';
 
 interface ViewLaborerModalProps {
   laborer: Laborer | null;
@@ -118,6 +119,12 @@ const ViewLaborerModal: React.FC<ViewLaborerModalProps> = ({ laborer, onClose, o
 
         {/* Footer */}
         <div className="p-6 border-t border-border-subtle bg-white/5 flex gap-4">
+          <button 
+            onClick={() => exportLaborerToExcel(laborer, false)}
+            className="flex-1 bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 py-3 rounded-xl font-bold hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-2"
+          >
+            📊 Download Excel
+          </button>
           <button 
             onClick={() => onEdit(laborer)}
             className="flex-1 bg-white/5 border border-border-subtle text-text-primary py-3 rounded-xl font-bold hover:bg-white/10 transition-colors"

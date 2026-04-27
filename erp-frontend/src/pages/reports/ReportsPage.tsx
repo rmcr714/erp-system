@@ -52,21 +52,21 @@ const ReportsPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                     {/* Attendance Report Card */}
-                    <div className="group relative flex flex-col justify-between p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 transition-all duration-500 overflow-hidden min-h-[240px] cursor-pointer">
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <a href="#reports/attendance" className="group relative flex flex-col justify-between p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition-all duration-500 overflow-hidden min-h-[240px] cursor-pointer">
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="relative z-10 flex flex-col gap-4">
-                            <div className="h-14 w-14 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-3xl group-hover:scale-110 transition-transform duration-500">
+                            <div className="h-14 w-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-3xl group-hover:scale-110 transition-transform duration-500">
                                 📑
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">Attendance Report</h2>
+                                <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-indigo-400 transition-colors">Attendance Report</h2>
                                 <p className="text-slate-400 text-lg leading-relaxed">Generate and download detailed attendance reports for any given month.</p>
                             </div>
                         </div>
-                        <div className="relative z-10 flex items-center gap-2 text-purple-400 font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 mt-4">
+                        <div className="relative z-10 flex items-center gap-2 text-indigo-400 font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 mt-4">
                             Generate Report &rarr;
                         </div>
-                    </div>
+                    </a>
 
                     {/* Analytics Card */}
                     <a href="#reports/analytics" className="group relative flex flex-col justify-between p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-pink-500/50 transition-all duration-500 overflow-hidden min-h-[240px] cursor-pointer">

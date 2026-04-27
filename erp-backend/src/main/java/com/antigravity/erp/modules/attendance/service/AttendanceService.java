@@ -9,6 +9,7 @@ import com.antigravity.erp.modules.labor.enums.LaborerStatus;
 import com.antigravity.erp.modules.labor.service.LaborerService;
 import com.antigravity.erp.modules.labor.dto.LaborerDTO;
 import com.antigravity.erp.modules.labor.model.Laborer;
+import com.antigravity.erp.modules.labor.repository.LaborerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 public class AttendanceService {
 
     private final LaborerService laborerService;
+    private final LaborerRepository laborerRepository;
     private final AttendanceMusterRepository musterRepository;
     private final DailyAttendanceRepository dailyRepository;
     private final MonthlyPayrollRepository payrollRepository;
@@ -35,13 +37,17 @@ public class AttendanceService {
         }
 
         List<MonthlyPayroll> payrolls = payrollRepository.findByMonthAndYear(month, year);
+        List<Laborer> laborers = laborerRepository.findAll();
         
         Map<String, MonthlyPayroll> payrollMap = payrolls.stream()
                 .collect(Collectors.toMap(MonthlyPayroll::getGrNo, p -> p));
+        
+        Map<String, Laborer> laborerMap = laborers.stream()
+                .collect(Collectors.toMap(Laborer::getGrNo, l -> l));
 
         return musters.stream().map(muster -> {
             MonthlyPayroll payroll = payrollMap.get(muster.getGrNo());
-            Laborer laborer = muster.getLaborer();
+            Laborer laborer = laborerMap.get(muster.getGrNo());
 
             String name = laborer != null ? laborer.getFullName() : "Unknown";
             String designation = laborer != null ? laborer.getDesignation() : "Unknown";

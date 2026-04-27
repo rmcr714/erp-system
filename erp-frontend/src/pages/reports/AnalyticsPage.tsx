@@ -12,6 +12,8 @@ const AnalyticsPage: React.FC = () => {
     const [customMonth, setCustomMonth] = useState<number>(new Date().getMonth() + 1);
     const [customYear, setCustomYear] = useState<number>(new Date().getFullYear());
     const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+    const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
+    const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -172,25 +174,68 @@ const AnalyticsPage: React.FC = () => {
                         </div>
                         {filterTimeRange === -1 && (
                             <div className="flex items-center gap-2 bg-slate-900 border border-white/10 p-2 rounded-2xl animate-in fade-in zoom-in duration-300">
-                                <select 
-                                    value={customMonth}
-                                    onChange={e => setCustomMonth(parseInt(e.target.value))}
-                                    className="bg-slate-800 text-purple-400 font-bold px-3 py-1.5 rounded-lg border border-purple-500/30 focus:outline-none text-sm cursor-pointer hover:bg-slate-700 transition-colors"
-                                >
-                                    {monthNames.map((m, i) => (
-                                        <option key={i} value={i + 1}>{m}</option>
-                                    ))}
-                                </select>
-                                <select 
-                                    value={customYear}
-                                    onChange={e => setCustomYear(parseInt(e.target.value))}
-                                    className="bg-slate-800 text-purple-400 font-bold px-3 py-1.5 rounded-lg border border-purple-500/30 focus:outline-none text-sm cursor-pointer hover:bg-slate-700 transition-colors"
-                                >
-                                    {[...Array(5)].map((_, i) => {
-                                        const year = new Date().getFullYear() - i;
-                                        return <option key={year} value={year}>{year}</option>;
-                                    })}
-                                </select>
+                                {/* Custom Month Dropdown */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setMonthDropdownOpen(!monthDropdownOpen)}
+                                        className="flex items-center gap-2 bg-slate-800 text-purple-400 font-bold px-4 py-1.5 rounded-xl border border-purple-500/30 hover:bg-slate-700 transition-all focus:outline-none min-w-[110px] justify-between shadow-inner"
+                                    >
+                                        <span>{monthNames[customMonth - 1]}</span>
+                                        <span className={`text-purple-500 text-[10px] transition-transform duration-300 ${monthDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                                    </button>
+
+                                    {monthDropdownOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setMonthDropdownOpen(false)} />
+                                            <div className="absolute top-full left-0 mt-2 w-full bg-slate-800 border border-purple-500/30 rounded-xl shadow-[0_15px_40px_rgba(0,0,0,0.6)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                                                    {monthNames.map((m, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => { setCustomMonth(i + 1); setMonthDropdownOpen(false); }}
+                                                            className={`w-full text-left px-4 py-2 font-bold transition-colors ${i > 0 ? 'border-t border-white/5' : ''} ${customMonth === i + 1 ? 'bg-purple-500/20 text-purple-400' : 'text-slate-300 hover:bg-slate-700 hover:text-purple-300'}`}
+                                                        >
+                                                            {m}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Custom Year Dropdown */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
+                                        className="flex items-center gap-2 bg-slate-800 text-purple-400 font-bold px-4 py-1.5 rounded-xl border border-purple-500/30 hover:bg-slate-700 transition-all focus:outline-none min-w-[90px] justify-between shadow-inner"
+                                    >
+                                        <span>{customYear}</span>
+                                        <span className={`text-purple-500 text-[10px] transition-transform duration-300 ${yearDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+                                    </button>
+
+                                    {yearDropdownOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setYearDropdownOpen(false)} />
+                                            <div className="absolute top-full left-0 mt-2 w-full bg-slate-800 border border-purple-500/30 rounded-xl shadow-[0_15px_40px_rgba(0,0,0,0.6)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                                                    {[...Array(5)].map((_, i) => {
+                                                        const year = new Date().getFullYear() - i;
+                                                        return (
+                                                            <button
+                                                                key={year}
+                                                                onClick={() => { setCustomYear(year); setYearDropdownOpen(false); }}
+                                                                className={`w-full text-left px-4 py-2 font-bold transition-colors ${i > 0 ? 'border-t border-white/5' : ''} ${customYear === year ? 'bg-purple-500/20 text-purple-400' : 'text-slate-300 hover:bg-slate-700 hover:text-purple-300'}`}
+                                                            >
+                                                                {year}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -216,22 +261,10 @@ const AnalyticsPage: React.FC = () => {
                             <h2 className="text-2xl font-bold text-white mb-6">M/M Labor Cost Trends (Gross)</h2>
                             <div className="h-[400px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                        <defs>
-                                            {designations.map((desig, i) => (
-                                                <linearGradient key={`grad-${desig}`} id={`color${desig.replace(/\s+/g, '')}`} x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor={colors[i % colors.length]} stopOpacity={0.8}/>
-                                                    <stop offset="95%" stopColor={colors[i % colors.length]} stopOpacity={0}/>
-                                                </linearGradient>
-                                            ))}
-                                            <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#ec4899" stopOpacity={0.8}/>
-                                                <stop offset="95%" stopColor="#ec4899" stopOpacity={0}/>
-                                            </linearGradient>
-                                        </defs>
+                                    <BarChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                         <XAxis dataKey="label" stroke="#64748b" />
                                         <YAxis stroke="#64748b" tickFormatter={(val) => `₹${val/1000}k`} />
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                                         <Tooltip 
                                             contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }}
                                             itemStyle={{ color: '#e2e8f0', fontWeight: 'bold' }}
@@ -241,26 +274,21 @@ const AnalyticsPage: React.FC = () => {
                                         
                                         {filterDesignation === 'All' ? (
                                             designations.map((desig, i) => (
-                                                <Area 
+                                                <Bar 
                                                     key={desig}
-                                                    type="monotone" 
                                                     dataKey={desig} 
-                                                    stackId="1"
-                                                    stroke={colors[i % colors.length]} 
-                                                    fillOpacity={1} 
-                                                    fill={`url(#color${desig.replace(/\s+/g, '')})`} 
+                                                    stackId="a"
+                                                    fill={colors[i % colors.length]} 
                                                 />
                                             ))
                                         ) : (
-                                            <Area 
-                                                type="monotone" 
+                                            <Bar 
                                                 dataKey={filterDesignation} 
-                                                stroke="#ec4899" 
-                                                fillOpacity={1} 
-                                                fill="url(#colorTotal)" 
+                                                fill="#ec4899" 
+                                                radius={[4, 4, 0, 0]}
                                             />
                                         )}
-                                    </AreaChart>
+                                    </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
