@@ -96,16 +96,16 @@ const Dashboard: React.FC = () => {
                 </div>
             </a>
             
-            {/* Settings Card */}
-            <a href="#settings" className="group relative flex flex-col sm:flex-row justify-between sm:items-center p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-slate-500/50 transition-all duration-500 overflow-hidden md:col-span-2 xl:col-span-3">
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            {/* Reports Card */}
+            <a href="#reports" className="group relative flex flex-col sm:flex-row justify-between sm:items-center p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 transition-all duration-500 overflow-hidden md:col-span-2 xl:col-span-3">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative z-10 flex flex-row items-center gap-6">
-                    <div className="h-16 w-16 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400 text-3xl group-hover:rotate-90 transition-transform duration-700">
-                        ⚙️
+                    <div className="h-16 w-16 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-3xl group-hover:scale-110 transition-transform duration-500">
+                        📑
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-white group-hover:text-slate-300 transition-colors">System Settings</h2>
-                        <p className="text-slate-400 text-lg mt-1">Configure project sites, roles, and administrative options.</p>
+                        <h2 className="text-2xl font-bold text-white group-hover:text-purple-300 transition-colors">Reports</h2>
+                        <p className="text-slate-400 text-lg mt-1">Generate comprehensive attendance reports and view system analytics.</p>
                     </div>
                 </div>
             </a>

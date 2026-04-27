@@ -76,10 +76,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage = 'dashboard', isOpen = t
         </a>
         
         <a 
-          href="#settings" 
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-glass hover:text-text-primary transition-all duration-200"
+          href="#reports" 
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+            currentPage?.startsWith('report') 
+              ? 'bg-accent-primary/10 text-accent-primary' 
+              : 'text-text-secondary hover:bg-glass hover:text-text-primary'
+          }`}
         >
-          <span className="text-xl">⚙️</span> <span className="font-medium">Settings</span>
+          <span className="text-xl">📑</span> <span className="font-medium">Reports</span>
         </a>
       </nav>
     </aside>
