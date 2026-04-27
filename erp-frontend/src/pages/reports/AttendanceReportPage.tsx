@@ -44,7 +44,7 @@ const AttendanceReportPage: React.FC = () => {
     const fetchReport = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:8080/api/attendance/muster?month=${month}&year=${year}`);
+            const response = await fetch(`/api/attendance/muster?month=${month}&year=${year}`);
             if (response.ok) {
                 const result = await response.json();
                 setData(result);
