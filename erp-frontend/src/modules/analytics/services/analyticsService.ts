@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8080/api/reports/analytics';
+const API_URL = '/api/reports/analytics';
 
 export interface LaborCostData {
     month: number;

@@ -1,6 +1,6 @@
 import type { MonthlyMusterRow, AttendanceSaveRequest, PayrollUpdateRequest } from '../types';
 
-const API_BASE_URL = 'http://localhost:8080/api/attendance';
+const API_BASE_URL = '/api/attendance';
 
 export const attendanceService = {
     async getMonthlyMuster(month: number, year: number): Promise<MonthlyMusterRow[]> {

@@ -1,6 +1,6 @@
 import type { Laborer } from '../types/laborer';
 
-const API_BASE_URL = 'http://localhost:8080/api/laborers';
+const API_BASE_URL = '/api/laborers';
 
 interface SearchCriteria {
   name?: string;
