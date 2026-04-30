@@ -1,11 +1,6 @@
-const API_URL = '/api/reports/analytics';
+import { type LaborCostData } from '../types';
 
-export interface LaborCostData {
-    month: number;
-    year: number;
-    designation: string;
-    totalGrossSalary: number;
-}
+const API_URL = '/api/reports/analytics';
 
 export const analyticsService = {
     getLaborCostTrends: async (): Promise<LaborCostData[]> => {

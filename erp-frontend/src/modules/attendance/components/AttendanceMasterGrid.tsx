@@ -175,10 +175,14 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
         saveAllChanges: handleSaveAll
     }));
 
+    const sortedData = useMemo(() => {
+        return [...data].sort((a, b) => a.grNo.localeCompare(b.grNo, undefined, { numeric: true, sensitivity: 'base' }));
+    }, [data]);
+
     const paginatedData = useMemo(() => {
         const start = (currentPage - 1) * pageSize;
-        return data.slice(start, start + pageSize);
-    }, [data, currentPage, pageSize]);
+        return sortedData.slice(start, start + pageSize);
+    }, [sortedData, currentPage, pageSize]);
 
     const totalPages = Math.ceil(data.length / pageSize);
 
