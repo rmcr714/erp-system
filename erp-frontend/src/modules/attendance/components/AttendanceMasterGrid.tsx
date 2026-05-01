@@ -240,7 +240,8 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
                 <th className="p-3 text-right font-bold text-amber-400 border-r border-b border-white/10 bg-slate-900 w-[100px] min-w-[100px]">Online Adv.</th>
                 <th className="p-3 text-right font-bold text-orange-400 border-r border-b border-white/10 bg-slate-900 w-[100px] min-w-[100px]">Total Adv.</th>
                 <th className="p-3 text-right font-bold text-cyan-400 border-r border-b border-white/10 bg-slate-900 w-[100px] min-w-[100px]">Debit Bal.</th>
-                <th className="p-3 text-right font-bold text-white border-b border-white/10 bg-emerald-600/20 w-[120px] min-w-[120px]">Closing Bal.</th>
+                <th className="p-3 text-right font-bold text-white border-r border-b border-white/10 bg-emerald-600/20 w-[120px] min-w-[120px]">Closing Bal.</th>
+                <th className="p-3 text-left font-bold text-slate-400 border-b border-white/10 bg-slate-900 w-[150px] min-w-[150px]">Remark</th>
             </tr>
         </thead>
     );
@@ -384,7 +385,12 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
                                                 <td className="px-3 py-1.5 text-right font-bold text-amber-400/70 border-r border-b border-white/10 w-[100px] text-[11px]">₹{row.onlineAdvance.toLocaleString()}</td>
                                                 <td className="px-3 py-1.5 text-right font-bold text-orange-400 border-r border-b border-white/10 w-[100px] bg-orange-500/10 text-[12px]">₹{row.totalAdvance.toLocaleString()}</td>
                                                 <td className="px-3 py-1.5 text-right font-bold text-cyan-400 border-r border-b border-white/10 w-[100px] bg-cyan-500/10 text-[12px]">₹{row.debitBalance.toLocaleString()}</td>
-                                                <td className="px-3 py-1.5 text-right font-black text-white border-b border-white/10 w-[120px] bg-emerald-600/10 text-[14px]">₹{row.closingBalance.toLocaleString()}</td>
+                                                <td className="px-3 py-1.5 text-right font-black text-white border-r border-b border-white/10 w-[120px] bg-emerald-600/10 text-[14px]">₹{row.closingBalance.toLocaleString()}</td>
+                                                <td className="px-3 py-1.5 text-left border-b border-white/10 w-[150px] bg-slate-900/20">
+                                                    <span className="text-slate-500 italic text-[11px] truncate block w-full" title={row.remarks || ''}>
+                                                        {row.remarks || '-'}
+                                                    </span>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
