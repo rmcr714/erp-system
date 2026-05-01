@@ -3,8 +3,12 @@ package com.antigravity.erp.modules.attendance.controller;
 import com.antigravity.erp.modules.attendance.dto.AttendanceSaveRequest;
 import com.antigravity.erp.modules.attendance.dto.MonthlyMusterRowDTO;
 import com.antigravity.erp.modules.attendance.dto.PayrollUpdateRequest;
+import com.antigravity.erp.modules.attendance.dto.WorkerPresenceDTO;
 import com.antigravity.erp.modules.attendance.service.AttendanceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -71,5 +75,17 @@ public class AttendanceController {
     public ResponseEntity<String> updatePayrollBatch(@RequestBody List<PayrollUpdateRequest> requests) {
         attendanceService.updatePayrollBatch(requests);
         return ResponseEntity.ok("Payroll batch updated successfully");
+    }
+
+    @GetMapping("/worker-presence")
+    public ResponseEntity<Page<WorkerPresenceDTO>> getWorkerPresence(
+            @RequestParam(name = "day", required = false) Integer day,
+            @RequestParam(name = "month", required = false) Integer month,
+            @RequestParam(name = "year", required = false) Integer year,
+            @RequestParam(name = "grNo", required = false) String grNo,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(attendanceService.getWorkerPresence(day, month, year, grNo, pageable));
     }
 }

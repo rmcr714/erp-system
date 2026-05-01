@@ -84,6 +84,23 @@ const ReportsPage: React.FC = () => {
                             View Analytics &rarr;
                         </div>
                     </a>
+
+                    {/* Worker Presence Search Card */}
+                    <a href="#reports/worker-presence" className="group relative flex flex-col justify-between p-8 rounded-3xl bg-slate-900 border border-slate-800 hover:border-sky-500/50 transition-all duration-500 overflow-hidden min-h-[240px] cursor-pointer">
+                        <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="relative z-10 flex flex-col gap-4">
+                            <div className="h-14 w-14 rounded-2xl bg-sky-500/20 flex items-center justify-center text-sky-400 text-3xl group-hover:scale-110 transition-transform duration-500">
+                                📅
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-sky-400 transition-colors">Worker Date Search</h2>
+                                <p className="text-slate-400 text-lg leading-relaxed">Search for all workers present on a specific date. Filter by GR number.</p>
+                            </div>
+                        </div>
+                        <div className="relative z-10 flex items-center gap-2 text-sky-400 font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0 mt-4">
+                            Search Workers &rarr;
+                        </div>
+                    </a>
                 </div>
             </main>
         </div>

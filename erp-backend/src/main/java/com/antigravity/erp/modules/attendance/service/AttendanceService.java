@@ -3,6 +3,7 @@ package com.antigravity.erp.modules.attendance.service;
 import com.antigravity.erp.modules.attendance.dto.MonthlyMusterRowDTO;
 import com.antigravity.erp.modules.attendance.dto.AttendanceSaveRequest;
 import com.antigravity.erp.modules.attendance.dto.PayrollUpdateRequest;
+import com.antigravity.erp.modules.attendance.dto.WorkerPresenceDTO;
 import com.antigravity.erp.modules.attendance.model.*;
 import com.antigravity.erp.modules.attendance.repository.*;
 import com.antigravity.erp.modules.labor.enums.LaborerStatus;
@@ -13,6 +14,9 @@ import com.antigravity.erp.modules.labor.repository.LaborerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -391,6 +395,50 @@ public class AttendanceService {
 
     private BigDecimal valueOrZero(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
+    }
+
+    public Page<WorkerPresenceDTO> getWorkerPresence(Integer day, Integer month, Integer year, String grNo, Pageable pageable) {
+        Page<DailyAttendance> attendancePage;
+        
+        boolean hasGrNo = grNo != null && !grNo.trim().isEmpty();
+        boolean hasDay = day != null && day > 0;
+        boolean hasMonth = month != null && month > 0;
+        boolean hasYear = year != null && year > 0;
+
+        if (hasGrNo && !hasMonth && !hasYear) {
+            attendancePage = dailyRepository.findByGrNo(grNo, pageable);
+        } else if (hasDay && hasMonth && hasYear) {
+            if (hasGrNo) {
+                attendancePage = dailyRepository.findByGrNoAndYearAndMonthAndDay(grNo, year, month, day)
+                        .map(attendance -> (Page<DailyAttendance>) new PageImpl<>(Collections.singletonList(attendance), pageable, 1))
+                        .orElseGet(() -> Page.empty(pageable));
+            } else {
+                attendancePage = dailyRepository.findByYearAndMonthAndDay(year, month, day, pageable);
+            }
+        } else if (hasMonth && hasYear) {
+            if (hasGrNo) {
+                attendancePage = dailyRepository.findByGrNoAndYearAndMonth(grNo, year, month, pageable);
+            } else {
+                attendancePage = dailyRepository.findByYearAndMonth(year, month, pageable);
+            }
+        } else {
+            return Page.empty(pageable);
+        }
+
+        List<WorkerPresenceDTO> dtos = attendancePage.getContent().stream()
+                .map((DailyAttendance attendance) -> {
+                    Laborer laborer = laborerRepository.findById(attendance.getGrNo()).orElse(null);
+                    return WorkerPresenceDTO.builder()
+                            .grNo(attendance.getGrNo())
+                            .name(laborer != null ? laborer.getFullName() : "Unknown")
+                            .designation(laborer != null ? laborer.getDesignation() : "N/A")
+                            .units(attendance.getUnits())
+                            .day(attendance.getDay())
+                            .build();
+                })
+                .collect(Collectors.toList());
+        
+        return new PageImpl<>(dtos, pageable, attendancePage.getTotalElements());
     }
 
     private List<LaborerDTO> getAttendanceLaborers() {

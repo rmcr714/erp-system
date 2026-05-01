@@ -66,5 +66,19 @@ export const attendanceService = {
             body: JSON.stringify(requests),
         });
         if (!response.ok) throw new Error('Failed to update payroll batch');
+    },
+
+    async getWorkerPresence(day: number | null, month: number | null, year: number | null, grNo?: string, page = 0, size = 10): Promise<any> {
+        let params = new URLSearchParams();
+        if (day && day > 0) params.append('day', day.toString());
+        if (month && month > 0) params.append('month', month.toString());
+        if (year && year > 0) params.append('year', year.toString());
+        if (grNo) params.append('grNo', grNo);
+        params.append('page', page.toString());
+        params.append('size', size.toString());
+        
+        const response = await fetch(`${API_BASE_URL}/worker-presence?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to fetch worker presence');
+        return response.json();
     }
 };

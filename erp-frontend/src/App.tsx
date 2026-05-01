@@ -5,6 +5,7 @@ import PayrollPage from './pages/payroll/PayrollPage';
 import ReportsPage from './pages/reports/ReportsPage';
 import AnalyticsPage from './pages/reports/AnalyticsPage';
 import AttendanceReportPage from './pages/reports/AttendanceReportPage';
+import WorkerPresencePage from './pages/reports/WorkerPresencePage';
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 
@@ -38,6 +39,9 @@ function App() {
     }
     if (currentPage.startsWith('reports/attendance')) {
       return <AttendanceReportPage />;
+    }
+    if (currentPage.startsWith('reports/worker-presence')) {
+      return <WorkerPresencePage />;
     }
     if (currentPage.startsWith('report')) {
       return <ReportsPage />;

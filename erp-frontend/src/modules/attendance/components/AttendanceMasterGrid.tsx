@@ -35,8 +35,9 @@ const GridInput = ({
         const val = e.target.value;
         if (/^[0-9]*\.?[0-9]*$/.test(val)) {
             setLocalValue(val);
-            const numVal = parseFloat(val) || 0;
-            if (numVal !== initialValue) {
+            const initialStr = initialValue === 0 ? '' : initialValue.toString();
+            // If the user typed '0' specifically, or changed the value, trigger onChange
+            if (val !== initialStr || (val === '0' && initialValue === 0)) {
                 if (val !== '' && !val.endsWith('.')) {
                     onChange(val);
                 } else if (val === '') {
@@ -47,10 +48,11 @@ const GridInput = ({
     };
 
     const handleBlur = () => {
-        const numVal = parseFloat(localValue) || 0;
-        if (numVal !== initialValue) {
+        const initialStr = initialValue === 0 ? '' : initialValue.toString();
+        if (localValue !== initialStr) {
+            const numVal = parseFloat(localValue) || 0;
             const fixed = numVal.toString();
-            setLocalValue(fixed === '0' ? '' : fixed);
+            setLocalValue(fixed); // Keep the '0' if they typed it
             onChange(fixed);
         }
     };
