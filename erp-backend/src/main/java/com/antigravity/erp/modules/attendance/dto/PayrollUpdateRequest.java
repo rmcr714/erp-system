@@ -13,4 +13,5 @@ public class PayrollUpdateRequest {
     private BigDecimal siteAdvance;
     private BigDecimal onlineAdvance;
     private BigDecimal debitBalance;
+    private String remarks;
 }

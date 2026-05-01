@@ -13,6 +13,7 @@ export interface MonthlyMusterRow {
     totalAdvance: number;
     closingBalance: number;
     debitBalance: number;
+    remarks?: string;
     isActive?: boolean;
 }
 
@@ -31,4 +32,5 @@ export interface PayrollUpdateRequest {
     siteAdvance: number;
     onlineAdvance: number;
     debitBalance: number;
+    remarks?: string;
 }

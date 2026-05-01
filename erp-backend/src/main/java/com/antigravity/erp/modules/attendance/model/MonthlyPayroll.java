@@ -41,6 +41,7 @@ public class MonthlyPayroll {
     private BigDecimal totalAdvance;
     private BigDecimal netBalance;
     private BigDecimal debitBalance;
+    private String remarks;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gr_no", insertable = false, updatable = false)

@@ -133,12 +133,13 @@ const PayrollPage: React.FC = () => {
         );
     }, [data]);
 
-    const updatePayrollField = (grNo: string, field: 'salaryPerDay' | 'siteAdvance' | 'onlineAdvance' | 'debitBalance', value: string) => {
-        const numberValue = parseFloat(value) || 0;
+    const updatePayrollField = (grNo: string, field: 'salaryPerDay' | 'siteAdvance' | 'onlineAdvance' | 'debitBalance' | 'remarks', value: string) => {
+        const isNumberField = field !== 'remarks';
+        const updatedValue = isNumberField ? (parseFloat(value) || 0) : value;
 
         setData(prev => prev.map(row => {
             if (row.grNo !== grNo) return row;
-            return recalculateRow({ ...row, [field]: numberValue });
+            return recalculateRow({ ...row, [field]: updatedValue });
         }));
 
         setDirtyRows(prev => ({ ...prev, [grNo]: true }));
@@ -154,7 +155,8 @@ const PayrollPage: React.FC = () => {
                 rate: row.salaryPerDay,
                 siteAdvance: row.siteAdvance,
                 onlineAdvance: row.onlineAdvance,
-                debitBalance: row.debitBalance
+                debitBalance: row.debitBalance,
+                remarks: row.remarks
             }));
 
         if (requests.length === 0) {
@@ -190,7 +192,8 @@ const PayrollPage: React.FC = () => {
                 <th className="p-3 text-right font-bold text-amber-400 border-r border-b border-white/10 w-[130px] min-w-[130px]">Online Adv.</th>
                 <th className="p-3 text-right font-bold text-orange-400 border-r border-b border-white/10 w-[130px] min-w-[130px]">Total Adv.</th>
                 <th className="p-3 text-right font-bold text-cyan-400 border-r border-b border-white/10 w-[130px] min-w-[130px]">Debit Bal.</th>
-                <th className="p-3 text-right font-bold text-white border-b border-white/10 w-[140px] min-w-[140px]">Net Balance</th>
+                <th className="p-3 text-right font-bold text-white border-r border-b border-white/10 w-[140px] min-w-[140px]">Net Balance</th>
+                <th className="p-3 text-left font-bold text-slate-400 border-b border-white/10 w-[400px] min-w-[400px]">Remark</th>
             </tr>
         </thead>
     );
@@ -408,7 +411,25 @@ const PayrollPage: React.FC = () => {
                                                             <span className="font-black text-cyan-400">{money(row.debitBalance)}</span>
                                                         )}
                                                     </td>
-                                                    <td className="p-3 text-right text-white font-black border-b border-white/10 w-[140px] bg-emerald-600/10">{money(row.closingBalance)}</td>
+                                                    <td className="p-3 text-right text-white font-black border-r border-b border-white/10 w-[140px] bg-emerald-600/10">{money(row.closingBalance)}</td>
+                                                    <td className="p-2 border-b border-white/10 w-[400px]">
+                                                        {isEditMode ? (
+                                                            <input 
+                                                                value={row.remarks || ''} 
+                                                                onChange={(event) => updatePayrollField(row.grNo, 'remarks', event.target.value)} 
+                                                                placeholder="Add remark..."
+                                                                title={row.remarks || ''}
+                                                                className="w-full bg-white/5 border border-white/10 rounded px-3 py-1.5 text-left text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 placeholder:opacity-30 transition-all hover:bg-white/10" 
+                                                            />
+                                                        ) : (
+                                                            <span 
+                                                                className="text-slate-500 italic text-[11px] truncate block w-full cursor-help"
+                                                                title={row.remarks || 'No remarks'}
+                                                            >
+                                                                {row.remarks || '-'}
+                                                            </span>
+                                                        )}
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>

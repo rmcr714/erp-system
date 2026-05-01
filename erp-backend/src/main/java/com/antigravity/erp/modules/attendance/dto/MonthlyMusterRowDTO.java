@@ -24,6 +24,7 @@ public class MonthlyMusterRowDTO {
     private BigDecimal totalAdvance;
     private BigDecimal closingBalance;
     private BigDecimal debitBalance;
+    private String remarks;
     
     private Boolean isActive;
 }

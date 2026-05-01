@@ -90,6 +90,7 @@ public class AttendanceService {
                     .totalAdvance(totalAdv)
                     .closingBalance(balance)
                     .debitBalance(debitBal)
+                    .remarks(payroll != null && payroll.getRemarks() != null ? payroll.getRemarks() : "")
                     .isActive(muster.getIsActive())
                     .build();
         }).collect(Collectors.toList());
@@ -242,6 +243,7 @@ public class AttendanceService {
         payroll.setOnlineAdvance(valueOrZero(request.getOnlineAdvance()));
         payroll.setTotalAdvance(valueOrZero(request.getSiteAdvance()).add(valueOrZero(request.getOnlineAdvance())));
         payroll.setDebitBalance(valueOrZero(request.getDebitBalance()));
+        payroll.setRemarks(request.getRemarks() != null ? request.getRemarks() : "");
         payrollRepository.save(payroll);
 
         recalculatePayrollTotals(request.getGrNo(), request.getMonth(), request.getYear());
@@ -261,6 +263,7 @@ public class AttendanceService {
             payroll.setOnlineAdvance(valueOrZero(request.getOnlineAdvance()));
             payroll.setTotalAdvance(valueOrZero(request.getSiteAdvance()).add(valueOrZero(request.getOnlineAdvance())));
             payroll.setDebitBalance(valueOrZero(request.getDebitBalance()));
+            payroll.setRemarks(request.getRemarks() != null ? request.getRemarks() : "");
             payrollRepository.save(payroll);
 
             recalculatePayrollTotals(request.getGrNo(), request.getMonth(), request.getYear());
