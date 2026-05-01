@@ -33,26 +33,25 @@ const GridInput = ({
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
-        // Allow only numbers and a single decimal point
         if (/^[0-9]*\.?[0-9]*$/.test(val)) {
             setLocalValue(val);
-            // Only sync to parent if it's a complete number
-            if (val !== '' && !val.endsWith('.')) {
-                onChange(val);
-            } else if (val === '') {
-                onChange('0');
+            const numVal = parseFloat(val) || 0;
+            if (numVal !== initialValue) {
+                if (val !== '' && !val.endsWith('.')) {
+                    onChange(val);
+                } else if (val === '') {
+                    onChange('0');
+                }
             }
         }
     };
 
     const handleBlur = () => {
-        // Final sync on blur to catch things like "2."
-        if (localValue.endsWith('.')) {
-            const fixed = localValue.slice(0, -1);
-            setLocalValue(fixed);
-            onChange(fixed || '0');
-        } else {
-            onChange(localValue || '0');
+        const numVal = parseFloat(localValue) || 0;
+        if (numVal !== initialValue) {
+            const fixed = numVal.toString();
+            setLocalValue(fixed === '0' ? '' : fixed);
+            onChange(fixed);
         }
     };
 
