@@ -33,11 +33,12 @@ public class DashboardService {
         int currentMonth = today.getMonthValue();
         int currentYear = today.getYear();
 
-        // ── 1. Workforce counts (3 fast COUNT queries) ──
-        long total = dashboardRepository.countAll();
-        long active = dashboardRepository.countByStatus("ACTIVE");
-        long inactive = dashboardRepository.countByStatus("INACTIVE");
-        long onLeave = dashboardRepository.countByStatus("ON_LEAVE");
+        // ── 1. Workforce counts (1 fast aggregated query) ──
+        long[] counts = dashboardRepository.getWorkforceCounts();
+        long total = counts[0];
+        long active = counts[1];
+        long inactive = counts[2];
+        long onLeave = counts[3];
 
         // ── 2. Designation breakdown (1 GROUP BY query) ──
         Map<String, Long> byDesignation = dashboardRepository.countActiveByDesignation();
@@ -89,8 +90,6 @@ public class DashboardService {
                 .laborersByDesignation(byDesignation)
                 .currentMonth(currentMonth)
                 .currentYear(currentYear)
-                // These fields are kept for DTO compatibility but set to defaults
-                // since the frontend no longer displays them
                 .todayPresentCount(0)
                 .todayTotalUnits(0)
                 .monthAverageAttendancePercent(0)

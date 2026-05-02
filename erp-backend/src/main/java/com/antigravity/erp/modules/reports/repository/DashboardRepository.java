@@ -23,17 +23,25 @@ public class DashboardRepository {
 
     // ─── Workforce Counts ───────────────────────────────────────────────
 
-    public long countByStatus(String status) {
-        return ((Number) em.createNativeQuery(
-                "SELECT COUNT(*) FROM laborers WHERE status = :status")
-                .setParameter("status", status)
-                .getSingleResult()).longValue();
-    }
+    /**
+     * Fetches all workforce counts in a single query.
+     * Returns [total, active, inactive, onLeave]
+     */
+    public long[] getWorkforceCounts() {
+        Object[] row = (Object[]) em.createNativeQuery(
+                "SELECT COUNT(*), " +
+                "       COUNT(*) FILTER (WHERE status = 'ACTIVE'), " +
+                "       COUNT(*) FILTER (WHERE status = 'INACTIVE'), " +
+                "       COUNT(*) FILTER (WHERE status = 'ON_LEAVE') " +
+                "FROM laborers")
+                .getSingleResult();
 
-    public long countAll() {
-        return ((Number) em.createNativeQuery(
-                "SELECT COUNT(*) FROM laborers")
-                .getSingleResult()).longValue();
+        return new long[]{
+                ((Number) row[0]).longValue(),
+                ((Number) row[1]).longValue(),
+                ((Number) row[2]).longValue(),
+                ((Number) row[3]).longValue()
+        };
     }
 
     /**
