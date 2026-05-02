@@ -1,0 +1,120 @@
+package com.antigravity.erp.modules.reports.repository;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Tuple;
+import org.springframework.stereotype.Repository;
+
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Lightweight repository for dashboard-specific aggregate queries.
+ * Uses native SQL to avoid loading full entities — only fetches counts and sums.
+ * Does NOT modify or replace any existing repository methods.
+ */
+@Repository
+public class DashboardRepository {
+
+    @PersistenceContext
+    private EntityManager em;
+
+    // ─── Workforce Counts ───────────────────────────────────────────────
+
+    public long countByStatus(String status) {
+        return ((Number) em.createNativeQuery(
+                "SELECT COUNT(*) FROM laborers WHERE status = :status")
+                .setParameter("status", status)
+                .getSingleResult()).longValue();
+    }
+
+    public long countAll() {
+        return ((Number) em.createNativeQuery(
+                "SELECT COUNT(*) FROM laborers")
+                .getSingleResult()).longValue();
+    }
+
+    /**
+     * Returns designation -> count for ACTIVE laborers only.
+     */
+    public Map<String, Long> countActiveByDesignation() {
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery(
+                "SELECT COALESCE(designation, 'Other'), COUNT(*) " +
+                "FROM laborers WHERE status = 'ACTIVE' " +
+                "GROUP BY designation ORDER BY COUNT(*) DESC")
+                .getResultList();
+
+        Map<String, Long> result = new LinkedHashMap<>();
+        for (Object[] row : rows) {
+            result.put((String) row[0], ((Number) row[1]).longValue());
+        }
+        return result;
+    }
+
+    public long countNewJoinees(int month, int year) {
+        return ((Number) em.createNativeQuery(
+                "SELECT COUNT(*) FROM laborers " +
+                "WHERE EXTRACT(MONTH FROM date_of_joining) = :month " +
+                "AND EXTRACT(YEAR FROM date_of_joining) = :year")
+                .setParameter("month", month)
+                .setParameter("year", year)
+                .getSingleResult()).longValue();
+    }
+
+    // ─── Payroll Aggregates (single month) ──────────────────────────────
+
+    /**
+     * Returns [grossPayroll, totalAdvance, netPayroll, totalDebit] for one month.
+     * Single query instead of loading all MonthlyPayroll entities.
+     */
+    public BigDecimal[] getPayrollAggregates(int month, int year) {
+        Object[] row = (Object[]) em.createNativeQuery(
+                "SELECT COALESCE(SUM(gross_salary), 0), " +
+                "       COALESCE(SUM(total_advance), 0), " +
+                "       COALESCE(SUM(net_balance), 0), " +
+                "       COALESCE(SUM(debit_balance), 0) " +
+                "FROM monthly_payroll WHERE month = :month AND year = :year")
+                .setParameter("month", month)
+                .setParameter("year", year)
+                .getSingleResult();
+
+        return new BigDecimal[]{
+                toBigDecimal(row[0]),
+                toBigDecimal(row[1]),
+                toBigDecimal(row[2]),
+                toBigDecimal(row[3])
+        };
+    }
+
+    // ─── Payroll Trends (6 months in ONE query) ─────────────────────────
+
+    /**
+     * Returns month/year -> gross total for up to 6 months in a single query.
+     * Replaces the old loop that fired 6 separate queries.
+     */
+    public List<Object[]> getPayrollTrends(int fromMonth, int fromYear, int toMonth, int toYear) {
+        return em.createNativeQuery(
+                "SELECT month, year, COALESCE(SUM(gross_salary), 0) " +
+                "FROM monthly_payroll " +
+                "WHERE (year > :fromYear OR (year = :fromYear AND month >= :fromMonth)) " +
+                "AND   (year < :toYear  OR (year = :toYear  AND month <= :toMonth)) " +
+                "GROUP BY year, month " +
+                "ORDER BY year ASC, month ASC")
+                .setParameter("fromYear", fromYear)
+                .setParameter("fromMonth", fromMonth)
+                .setParameter("toYear", toYear)
+                .setParameter("toMonth", toMonth)
+                .getResultList();
+    }
+
+    // ─── Helpers ────────────────────────────────────────────────────────
+
+    private BigDecimal toBigDecimal(Object val) {
+        if (val == null) return BigDecimal.ZERO;
+        if (val instanceof BigDecimal) return (BigDecimal) val;
+        return new BigDecimal(val.toString());
+    }
+}
