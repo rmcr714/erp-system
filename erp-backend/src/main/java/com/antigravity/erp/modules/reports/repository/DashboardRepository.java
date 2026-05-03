@@ -6,6 +6,7 @@ import jakarta.persistence.Tuple;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +73,24 @@ public class DashboardRepository {
                 .getSingleResult()).longValue();
     }
 
+    // ─── Attendance Aggregates ─────────────────────────────────────────
+
+    /**
+     * Returns [markedCount, presentCount, totalUnits] for one day.
+     */
+    public Object[] getTodayAttendanceSummary(LocalDate workDate) {
+        return (Object[]) em.createNativeQuery(
+                "SELECT COUNT(*), " +
+                "       COUNT(*) FILTER (WHERE COALESCE(units, 0) > 0), " +
+                "       COALESCE(SUM(units), 0) " +
+                "FROM daily_attendance_search das " +
+                "JOIN laborers l ON l.gr_no = das.gr_no " +
+                "WHERE das.work_date = :workDate " +
+                "AND l.status = 'ACTIVE'")
+                .setParameter("workDate", workDate)
+                .getSingleResult();
+    }
+
     // ─── Payroll Aggregates (single month) ──────────────────────────────
 
     /**
@@ -94,6 +113,25 @@ public class DashboardRepository {
                 toBigDecimal(row[1]),
                 toBigDecimal(row[2]),
                 toBigDecimal(row[3])
+        };
+    }
+
+    /**
+     * Returns [activePayrollRows, missingRateRows] for current month readiness.
+     */
+    public long[] getPayrollReadiness(int month, int year) {
+        Object[] row = (Object[]) em.createNativeQuery(
+                "SELECT COUNT(*) FILTER (WHERE COALESCE(is_active, true) = true), " +
+                "       COUNT(*) FILTER (WHERE COALESCE(is_active, true) = true " +
+                "           AND (rate IS NULL OR rate = 0)) " +
+                "FROM monthly_payroll WHERE month = :month AND year = :year")
+                .setParameter("month", month)
+                .setParameter("year", year)
+                .getSingleResult();
+
+        return new long[]{
+                ((Number) row[0]).longValue(),
+                ((Number) row[1]).longValue()
         };
     }
 

@@ -45,6 +45,26 @@ const Dashboard: React.FC = () => {
 
     const todayDate = new Date();
     const greeting = todayDate.getHours() < 12 ? 'Good Morning' : todayDate.getHours() < 17 ? 'Good Afternoon' : 'Good Evening';
+    const dashboardAlerts = stats ? [
+        ...(stats.todayPendingCount > 0 ? [{
+            title: 'Attendance pending',
+            detail: `${stats.todayPendingCount} active worker${stats.todayPendingCount === 1 ? '' : 's'} not marked today`,
+            href: '#attendance',
+            tone: 'amber',
+        }] : []),
+        ...(stats.currentMonthPayrollRecords < stats.activeLaborers ? [{
+            title: 'Payroll setup incomplete',
+            detail: `${stats.activeLaborers - stats.currentMonthPayrollRecords} active worker${stats.activeLaborers - stats.currentMonthPayrollRecords === 1 ? '' : 's'} missing this month`,
+            href: '#attendance',
+            tone: 'rose',
+        }] : []),
+        ...(stats.missingPayrollRateCount > 0 ? [{
+            title: 'Rates missing',
+            detail: `${stats.missingPayrollRateCount} payroll rate${stats.missingPayrollRateCount === 1 ? '' : 's'} need review`,
+            href: '#payroll',
+            tone: 'amber',
+        }] : []),
+    ] : [];
 
     return (
         <div className="flex h-screen w-screen font-inter bg-bg-main">
@@ -157,6 +177,59 @@ const Dashboard: React.FC = () => {
                         </div>
 
                         {/* ═══ ROW 2: Workforce Breakdown + Payroll Trend ═══ */}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                            <div className="rounded-2xl bg-slate-900/80 border border-white/[0.06] p-6">
+                                <div className="flex items-center justify-between gap-3 mb-5">
+                                    <h3 className="text-sm font-bold text-text-secondary uppercase tracking-widest">Today's Attendance</h3>
+                                    <span className="text-xs px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                                        {stats.todayMarkedCount} marked
+                                    </span>
+                                </div>
+                                <div className="flex items-end gap-3">
+                                    <p className="text-4xl font-black text-white tracking-tight">{stats.todayPresentCount}</p>
+                                    <p className="text-sm text-text-secondary pb-1">present workers</p>
+                                </div>
+                                <div className="mt-4 grid grid-cols-2 gap-3">
+                                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                                        <p className="text-xs text-text-secondary">Total units</p>
+                                        <p className="text-xl font-bold text-white mt-1">{stats.todayTotalUnits.toFixed(1)}</p>
+                                    </div>
+                                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3">
+                                        <p className="text-xs text-text-secondary">Pending</p>
+                                        <p className="text-xl font-bold text-amber-400 mt-1">{stats.todayPendingCount}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl bg-slate-900/80 border border-white/[0.06] p-6">
+                                <div className="flex items-center justify-between gap-3 mb-4">
+                                    <h3 className="text-sm font-bold text-text-secondary uppercase tracking-widest">Pending Alerts</h3>
+                                    <span className={`text-xs px-2.5 py-1 rounded-lg border ${dashboardAlerts.length > 0 ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>
+                                        {dashboardAlerts.length}
+                                    </span>
+                                </div>
+                                {dashboardAlerts.length === 0 ? (
+                                    <div className="rounded-xl bg-emerald-500/[0.06] border border-emerald-500/15 p-4">
+                                        <p className="text-sm font-bold text-emerald-300">All caught up</p>
+                                        <p className="text-xs text-text-secondary mt-1">Attendance and payroll setup look current.</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-3">
+                                        {dashboardAlerts.map((alert) => (
+                                            <a
+                                                key={alert.title}
+                                                href={alert.href}
+                                                className={`block rounded-xl border p-3 transition-colors ${alert.tone === 'rose' ? 'bg-rose-500/[0.06] border-rose-500/15 hover:border-rose-500/35' : 'bg-amber-500/[0.06] border-amber-500/15 hover:border-amber-500/35'}`}
+                                            >
+                                                <p className={`text-sm font-bold ${alert.tone === 'rose' ? 'text-rose-300' : 'text-amber-300'}`}>{alert.title}</p>
+                                                <p className="text-xs text-text-secondary mt-1">{alert.detail}</p>
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                             {/* Workforce by Designation */}
                             <div className="lg:col-span-1 rounded-2xl bg-slate-900/80 border border-white/[0.06] p-6">

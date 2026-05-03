@@ -46,12 +46,21 @@ public class DashboardService {
         // ── 3. New joinees (1 COUNT query) ──
         long newJoinees = dashboardRepository.countNewJoinees(currentMonth, currentYear);
 
+        Object[] todayAttendance = dashboardRepository.getTodayAttendanceSummary(today);
+        long todayMarkedCount = ((Number) todayAttendance[0]).longValue();
+        double todayPresentCount = ((Number) todayAttendance[1]).doubleValue();
+        double todayTotalUnits = ((Number) todayAttendance[2]).doubleValue();
+        long todayPendingCount = Math.max(0, active - todayMarkedCount);
+
         // ── 4. Current month payroll aggregates (1 SUM query) ──
         BigDecimal[] payrollAgg = dashboardRepository.getPayrollAggregates(currentMonth, currentYear);
         BigDecimal grossPayroll = payrollAgg[0];
         BigDecimal totalAdvance = payrollAgg[1];
         BigDecimal netPayroll = payrollAgg[2];
         BigDecimal totalDebit = payrollAgg[3];
+        long[] payrollReadiness = dashboardRepository.getPayrollReadiness(currentMonth, currentYear);
+        long currentMonthPayrollRecords = payrollReadiness[0];
+        long missingPayrollRateCount = payrollReadiness[1];
 
         // ── 5. Payroll trends — last 6 months (1 grouped query) ──
         LocalDate sixMonthsAgo = today.minusMonths(5);
@@ -90,13 +99,17 @@ public class DashboardService {
                 .laborersByDesignation(byDesignation)
                 .currentMonth(currentMonth)
                 .currentYear(currentYear)
-                .todayPresentCount(0)
-                .todayTotalUnits(0)
+                .todayPresentCount(todayPresentCount)
+                .todayTotalUnits(todayTotalUnits)
+                .todayMarkedCount(todayMarkedCount)
+                .todayPendingCount(todayPendingCount)
                 .monthAverageAttendancePercent(0)
                 .currentMonthGrossPayroll(grossPayroll)
                 .currentMonthTotalAdvance(totalAdvance)
                 .currentMonthNetPayroll(netPayroll)
                 .currentMonthTotalDebit(totalDebit)
+                .currentMonthPayrollRecords(currentMonthPayrollRecords)
+                .missingPayrollRateCount(missingPayrollRateCount)
                 .payrollTrends(payrollTrends)
                 .attendanceTrends(Collections.emptyList())
                 .newJoineesThisMonth(newJoinees)

@@ -8,11 +8,15 @@ export interface DashboardStats {
     currentYear: number;
     todayPresentCount: number;
     todayTotalUnits: number;
+    todayMarkedCount: number;
+    todayPendingCount: number;
     monthAverageAttendancePercent: number;
     currentMonthGrossPayroll: number;
     currentMonthTotalAdvance: number;
     currentMonthNetPayroll: number;
     currentMonthTotalDebit: number;
+    currentMonthPayrollRecords: number;
+    missingPayrollRateCount: number;
     payrollTrends: MonthlyTrend[];
     attendanceTrends: MonthlyTrend[];
     newJoineesThisMonth: number;

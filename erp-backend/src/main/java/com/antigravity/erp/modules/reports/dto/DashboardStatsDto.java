@@ -26,6 +26,8 @@ public class DashboardStatsDto {
     private int currentYear;
     private double todayPresentCount;
     private double todayTotalUnits;
+    private long todayMarkedCount;
+    private long todayPendingCount;
     private double monthAverageAttendancePercent;
 
     // Payroll
@@ -33,6 +35,8 @@ public class DashboardStatsDto {
     private BigDecimal currentMonthTotalAdvance;
     private BigDecimal currentMonthNetPayroll;
     private BigDecimal currentMonthTotalDebit;
+    private long currentMonthPayrollRecords;
+    private long missingPayrollRateCount;
 
     // Trends (last 6 months)
     private List<MonthlyTrend> payrollTrends;
