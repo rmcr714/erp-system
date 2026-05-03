@@ -35,46 +35,55 @@ public class DashboardService {
 
         // ── 1. Workforce counts (1 fast aggregated query) ──
         long[] counts = dashboardRepository.getWorkforceCounts();
-        long total = counts[0];
-        long active = counts[1];
-        long inactive = counts[2];
-        long onLeave = counts[3];
+        long total = safeLong(counts, 0);
+        long active = safeLong(counts, 1);
+        long inactive = safeLong(counts, 2);
+        long onLeave = safeLong(counts, 3);
 
         // ── 2. Designation breakdown (1 GROUP BY query) ──
-        Map<String, Long> byDesignation = dashboardRepository.countActiveByDesignation();
+        Map<String, Long> byDesignation = Optional
+                .ofNullable(dashboardRepository.countActiveByDesignation())
+                .orElseGet(Collections::emptyMap);
 
         // ── 3. New joinees (1 COUNT query) ──
         long newJoinees = dashboardRepository.countNewJoinees(currentMonth, currentYear);
 
         Object[] todayAttendance = dashboardRepository.getTodayAttendanceSummary(today);
-        long todayMarkedCount = ((Number) todayAttendance[0]).longValue();
-        double todayPresentCount = ((Number) todayAttendance[1]).doubleValue();
-        double todayTotalUnits = ((Number) todayAttendance[2]).doubleValue();
+        long todayMarkedCount = safeLong(todayAttendance, 0);
+        double todayPresentCount = safeDouble(todayAttendance, 1);
+        double todayTotalUnits = safeDouble(todayAttendance, 2);
         long todayPendingCount = Math.max(0, active - todayMarkedCount);
 
         // ── 4. Current month payroll aggregates (1 SUM query) ──
         BigDecimal[] payrollAgg = dashboardRepository.getPayrollAggregates(currentMonth, currentYear);
-        BigDecimal grossPayroll = payrollAgg[0];
-        BigDecimal totalAdvance = payrollAgg[1];
-        BigDecimal netPayroll = payrollAgg[2];
-        BigDecimal totalDebit = payrollAgg[3];
+        BigDecimal grossPayroll = safeBigDecimal(payrollAgg, 0);
+        BigDecimal totalAdvance = safeBigDecimal(payrollAgg, 1);
+        BigDecimal netPayroll = safeBigDecimal(payrollAgg, 2);
+        BigDecimal totalDebit = safeBigDecimal(payrollAgg, 3);
         long[] payrollReadiness = dashboardRepository.getPayrollReadiness(currentMonth, currentYear);
-        long currentMonthPayrollRecords = payrollReadiness[0];
-        long missingPayrollRateCount = payrollReadiness[1];
+        long currentMonthPayrollRecords = safeLong(payrollReadiness, 0);
+        long missingPayrollRateCount = safeLong(payrollReadiness, 1);
 
         // ── 5. Payroll trends — last 6 months (1 grouped query) ──
         LocalDate sixMonthsAgo = today.minusMonths(5);
         int fromMonth = sixMonthsAgo.getMonthValue();
         int fromYear = sixMonthsAgo.getYear();
 
-        List<Object[]> trendRows = dashboardRepository.getPayrollTrends(fromMonth, fromYear, currentMonth, currentYear);
+        List<Object[]> trendRows = Optional
+                .ofNullable(dashboardRepository.getPayrollTrends(fromMonth, fromYear, currentMonth, currentYear))
+                .orElseGet(Collections::emptyList);
 
         // Build a lookup map of (year*100 + month) -> gross value
         Map<Integer, Double> trendMap = new HashMap<>();
         for (Object[] row : trendRows) {
-            int m = ((Number) row[0]).intValue();
-            int y = ((Number) row[1]).intValue();
-            double gross = row[2] != null ? ((Number) row[2]).doubleValue() : 0;
+            Number monthValue = safeNumber(row, 0);
+            Number yearValue = safeNumber(row, 1);
+            if (monthValue == null || yearValue == null) {
+                continue;
+            }
+            int m = monthValue.intValue();
+            int y = yearValue.intValue();
+            double gross = safeDouble(row, 2);
             trendMap.put(y * 100 + m, gross);
         }
 
@@ -116,5 +125,32 @@ public class DashboardService {
                 .topEarners(Collections.emptyList())
                 .highestDebits(Collections.emptyList())
                 .build();
+    }
+
+    private long safeLong(long[] values, int index) {
+        return values != null && index >= 0 && index < values.length ? values[index] : 0;
+    }
+
+    private long safeLong(Object[] values, int index) {
+        Number number = safeNumber(values, index);
+        return number != null ? number.longValue() : 0;
+    }
+
+    private double safeDouble(Object[] values, int index) {
+        Number number = safeNumber(values, index);
+        return number != null ? number.doubleValue() : 0.0;
+    }
+
+    private Number safeNumber(Object[] values, int index) {
+        if (values == null || index < 0 || index >= values.length || values[index] == null) {
+            return null;
+        }
+        return (Number) values[index];
+    }
+
+    private BigDecimal safeBigDecimal(BigDecimal[] values, int index) {
+        return values != null && index >= 0 && index < values.length && values[index] != null
+                ? values[index]
+                : BigDecimal.ZERO;
     }
 }
