@@ -62,28 +62,32 @@ public class LaborerServiceImpl implements LaborerService {
         Laborer laborer = mapToEntity(laborerDTO);
         Laborer savedLaborer = laborerRepository.save(laborer);
 
-        // Create Muster and Payroll records for current month
         LocalDate now = LocalDate.now();
         int currentMonth = now.getMonthValue();
         int currentYear = now.getYear();
 
-        AttendanceMuster muster = AttendanceMuster.builder()
-                .grNo(savedLaborer.getGrNo())
-                .month(currentMonth)
-                .year(currentYear)
-                .attendanceData(new java.util.HashMap<>())
-                .isActive(true)
-                .build();
-        attendanceMusterRepository.save(muster);
+        boolean isMonthStarted = !attendanceMusterRepository.findByMonthAndYear(currentMonth, currentYear).isEmpty();
 
-        MonthlyPayroll payroll = MonthlyPayroll.builder()
-                .grNo(savedLaborer.getGrNo())
-                .month(currentMonth)
-                .year(currentYear)
-                .rate(laborerDTO.getSalaryPerDay())
-                .isActive(true)
-                .build();
-        monthlyPayrollRepository.save(payroll);
+        if (isMonthStarted && laborerDTO.getStatus() == com.antigravity.erp.modules.labor.enums.LaborerStatus.ACTIVE) {
+            AttendanceMuster muster = AttendanceMuster.builder()
+                    .grNo(savedLaborer.getGrNo())
+                    .month(currentMonth)
+                    .year(currentYear)
+                    .attendanceData(new java.util.HashMap<>())
+                    .isActive(true)
+                    .build();
+            attendanceMusterRepository.save(muster);
+
+            MonthlyPayroll payroll = MonthlyPayroll.builder()
+                    .grNo(savedLaborer.getGrNo())
+                    .month(currentMonth)
+                    .year(currentYear)
+                    .rate(laborerDTO.getSalaryPerDay() != null ? laborerDTO.getSalaryPerDay() : java.math.BigDecimal.ZERO)
+                    .isActive(true)
+                    .remarks("")
+                    .build();
+            monthlyPayrollRepository.save(payroll);
+        }
 
         return mapToDTO(savedLaborer);
     }
@@ -94,6 +98,9 @@ public class LaborerServiceImpl implements LaborerService {
         Laborer existingLaborer = laborerRepository.findById(grNo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
                         "Laborer with GR No " + grNo + " not found."));
+
+        com.antigravity.erp.modules.labor.enums.LaborerStatus oldStatus = existingLaborer.getStatus();
+        com.antigravity.erp.modules.labor.enums.LaborerStatus newStatus = laborerDTO.getStatus();
 
         // Update fields
         existingLaborer.setFullName(laborerDTO.getFullName());
@@ -112,57 +119,72 @@ public class LaborerServiceImpl implements LaborerService {
         existingLaborer.setPfNo(laborerDTO.getPfNo());
         existingLaborer.setIdProof(mapIdProofToEntity(laborerDTO.getIdProof()));
         existingLaborer.setBankDetails(mapBankDetailsToEntity(laborerDTO.getBankDetails()));
-        existingLaborer.setStatus(laborerDTO.getStatus());
+        existingLaborer.setStatus(newStatus);
         existingLaborer.setPhotoUrl(laborerDTO.getPhotoUrl());
 
         Laborer updatedLaborer = laborerRepository.save(existingLaborer);
 
-        // Update Muster and Payroll isActive status for current month based on laborer status
-        boolean isActive = laborerDTO.getStatus() == com.antigravity.erp.modules.labor.enums.LaborerStatus.ACTIVE;
-        LocalDate now = LocalDate.now();
-        int currentMonth = now.getMonthValue();
-        int currentYear = now.getYear();
+        if (oldStatus != newStatus) {
+            LocalDate now = LocalDate.now();
+            int currentMonth = now.getMonthValue();
+            int currentYear = now.getYear();
 
-        attendanceMusterRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear)
-                .ifPresentOrElse(
-                        muster -> {
-                            muster.setIsActive(isActive);
+            boolean isMonthStarted = !attendanceMusterRepository.findByMonthAndYear(currentMonth, currentYear).isEmpty();
+
+            if (newStatus == com.antigravity.erp.modules.labor.enums.LaborerStatus.ACTIVE) {
+                if (isMonthStarted) {
+                    attendanceMusterRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear)
+                            .ifPresentOrElse(
+                                    muster -> {
+                                        muster.setIsActive(true);
+                                        attendanceMusterRepository.save(muster);
+                                    },
+                                    () -> {
+                                        AttendanceMuster muster = AttendanceMuster.builder()
+                                                .grNo(grNo)
+                                                .month(currentMonth)
+                                                .year(currentYear)
+                                                .attendanceData(new java.util.HashMap<>())
+                                                .isActive(true)
+                                                .build();
+                                        attendanceMusterRepository.save(muster);
+                                    }
+                            );
+
+                    monthlyPayrollRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear)
+                            .ifPresentOrElse(
+                                    payroll -> {
+                                        payroll.setIsActive(true);
+                                        monthlyPayrollRepository.save(payroll);
+                                    },
+                                    () -> {
+                                        MonthlyPayroll payroll = MonthlyPayroll.builder()
+                                                .grNo(grNo)
+                                                .month(currentMonth)
+                                                .year(currentYear)
+                                                .rate(laborerDTO.getSalaryPerDay() != null ? laborerDTO.getSalaryPerDay() : java.math.BigDecimal.ZERO)
+                                                .isActive(true)
+                                                .remarks("")
+                                                .build();
+                                        monthlyPayrollRepository.save(payroll);
+                                    }
+                            );
+                }
+            } else {
+                // Inactive or On Leave
+                attendanceMusterRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear)
+                        .ifPresent(muster -> {
+                            muster.setIsActive(false);
                             attendanceMusterRepository.save(muster);
-                        },
-                        () -> {
-                            if (isActive) {
-                                AttendanceMuster muster = AttendanceMuster.builder()
-                                        .grNo(grNo)
-                                        .month(currentMonth)
-                                        .year(currentYear)
-                                        .isActive(true)
-                                        .build();
-                                attendanceMusterRepository.save(muster);
-                            }
-                        }
-                );
+                        });
 
-        monthlyPayrollRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear)
-                .ifPresentOrElse(
-                        payroll -> {
-                            payroll.setIsActive(isActive);
-                            // We do not update the rate here, just the isActive flag. 
-                            // The rate is updated on rollover or manually via a dedicated payroll endpoint.
+                monthlyPayrollRepository.findByGrNoAndMonthAndYear(grNo, currentMonth, currentYear)
+                        .ifPresent(payroll -> {
+                            payroll.setIsActive(false);
                             monthlyPayrollRepository.save(payroll);
-                        },
-                        () -> {
-                            if (isActive) {
-                                MonthlyPayroll payroll = MonthlyPayroll.builder()
-                                        .grNo(grNo)
-                                        .month(currentMonth)
-                                        .year(currentYear)
-                                        .rate(laborerDTO.getSalaryPerDay())
-                                        .isActive(true)
-                                        .build();
-                                monthlyPayrollRepository.save(payroll);
-                            }
-                        }
-                );
+                        });
+            }
+        }
 
         return mapToDTO(updatedLaborer);
     }

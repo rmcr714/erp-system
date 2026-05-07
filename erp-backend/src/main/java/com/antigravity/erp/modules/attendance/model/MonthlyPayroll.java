@@ -33,15 +33,41 @@ public class MonthlyPayroll {
     @Column(nullable = false)
     private Integer year;
 
-    private BigDecimal rate;
-    private BigDecimal totalUnits;
-    private BigDecimal grossSalary;
-    private BigDecimal siteAdvance;
-    private BigDecimal onlineAdvance;
-    private BigDecimal totalAdvance;
-    private BigDecimal netBalance;
-    private BigDecimal debitBalance;
-    private String remarks;
+    @Builder.Default
+    @Column(nullable = false)
+    private BigDecimal rate = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "total_units", nullable = false)
+    private BigDecimal totalUnits = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "gross_salary", nullable = false)
+    private BigDecimal grossSalary = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "site_advance", nullable = false)
+    private BigDecimal siteAdvance = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "online_advance", nullable = false)
+    private BigDecimal onlineAdvance = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "total_advance", nullable = false)
+    private BigDecimal totalAdvance = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "net_balance", nullable = false)
+    private BigDecimal netBalance = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "debit_balance", nullable = false)
+    private BigDecimal debitBalance = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private String remarks = "";
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gr_no", insertable = false, updatable = false)

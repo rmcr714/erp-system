@@ -102,11 +102,6 @@ public class AttendanceService {
 
     @Transactional
     public void startMonth(Integer month, Integer year) {
-        List<AttendanceMuster> existing = musterRepository.findByMonthAndYear(month, year);
-        if (!existing.isEmpty()) {
-            return;
-        }
-
         List<LaborerDTO> activeLaborers = getAttendanceLaborers();
         Integer prevMonth = month == 1 ? 12 : month - 1;
         Integer prevYear = month == 1 ? year - 1 : year;
@@ -117,29 +112,42 @@ public class AttendanceService {
         for (LaborerDTO laborer : activeLaborers) {
             String grNo = laborer.getGrNo();
             
-            AttendanceMuster muster = AttendanceMuster.builder()
-                    .grNo(grNo)
-                    .month(month)
-                    .year(year)
-                    .attendanceData(new HashMap<>())
-                    .isActive(true)
-                    .build();
-            musterRepository.save(muster);
+            // 1. Ensure Muster exists
+            if (!musterRepository.findByGrNoAndMonthAndYear(grNo, month, year).isPresent()) {
+                AttendanceMuster muster = AttendanceMuster.builder()
+                        .grNo(grNo)
+                        .month(month)
+                        .year(year)
+                        .attendanceData(new HashMap<>())
+                        .isActive(true)
+                        .build();
+                musterRepository.save(muster);
+            }
 
-            MonthlyPayroll prevPayroll = prevPayrolls.get(grNo);
-            BigDecimal rate = prevPayroll != null ? prevPayroll.getRate() : null;
+            // 2. Ensure Payroll exists
+            if (!payrollRepository.findByGrNoAndMonthAndYear(grNo, month, year).isPresent()) {
+                MonthlyPayroll prevPayroll = prevPayrolls.get(grNo);
+                BigDecimal rate = BigDecimal.ZERO;
+                
+                if (prevPayroll != null && prevPayroll.getRate() != null) {
+                    rate = prevPayroll.getRate();
+                } else if (laborer.getSalaryPerDay() != null) {
+                    rate = laborer.getSalaryPerDay();
+                }
 
-            MonthlyPayroll payroll = MonthlyPayroll.builder()
-                    .grNo(grNo)
-                    .month(month)
-                    .year(year)
-                    .rate(rate)
-                    .isActive(true)
-                    .siteAdvance(BigDecimal.ZERO)
-                    .onlineAdvance(BigDecimal.ZERO)
-                    .totalAdvance(BigDecimal.ZERO)
-                    .build();
-            payrollRepository.save(payroll);
+                MonthlyPayroll payroll = MonthlyPayroll.builder()
+                        .grNo(grNo)
+                        .month(month)
+                        .year(year)
+                        .rate(rate)
+                        .isActive(true)
+                        .siteAdvance(BigDecimal.ZERO)
+                        .onlineAdvance(BigDecimal.ZERO)
+                        .totalAdvance(BigDecimal.ZERO)
+                        .remarks("")
+                        .build();
+                payrollRepository.save(payroll);
+            }
         }
     }
 
