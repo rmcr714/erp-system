@@ -53,13 +53,12 @@ public class AttendanceService {
                 .debitBalance(BigDecimal.ZERO)
                 .build();
 
-        if (totalsData != null && totalsData.length > 0 && totalsData[0] != null) {
-            Object[] t = (Object[]) totalsData[0];
+        if (totalsData != null && totalsData.length >= 4) {
             totals = MonthlyMusterResponse.MonthlyTotals.builder()
-                    .grossSalary(t[0] != null ? (BigDecimal) t[0] : BigDecimal.ZERO)
-                    .totalAdvance(t[1] != null ? (BigDecimal) t[1] : BigDecimal.ZERO)
-                    .netBalance(t[2] != null ? (BigDecimal) t[2] : BigDecimal.ZERO)
-                    .debitBalance(t[3] != null ? (BigDecimal) t[3] : BigDecimal.ZERO)
+                    .grossSalary(totalsData[0] != null ? (BigDecimal) totalsData[0] : BigDecimal.ZERO)
+                    .totalAdvance(totalsData[1] != null ? (BigDecimal) totalsData[1] : BigDecimal.ZERO)
+                    .netBalance(totalsData[2] != null ? (BigDecimal) totalsData[2] : BigDecimal.ZERO)
+                    .debitBalance(totalsData[3] != null ? (BigDecimal) totalsData[3] : BigDecimal.ZERO)
                     .build();
         }
 
