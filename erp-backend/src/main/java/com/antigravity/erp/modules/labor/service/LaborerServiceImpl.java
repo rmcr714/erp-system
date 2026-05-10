@@ -10,6 +10,8 @@ import com.antigravity.erp.modules.attendance.repository.DailyAttendanceReposito
 import com.antigravity.erp.modules.attendance.repository.MonthlyPayrollRepository;
 import com.antigravity.erp.modules.site.service.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,18 +40,16 @@ public class LaborerServiceImpl implements LaborerService {
     private SiteService siteService;
 
     @Override
-    public List<LaborerDTO> getAllLaborers() {
-        return laborerRepository.findAll().stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+    public Page<LaborerDTO> getAllLaborers(Pageable pageable) {
+        return laborerRepository.findAll(pageable)
+                .map(this::mapToDTO);
     }
 
     @Override
-    public List<LaborerDTO> searchLaborers(String fullName, String grNo, String designation, String contactNo, Long siteId,
-            boolean onlyActive) {
-        return laborerRepository.findLaborers(fullName, grNo, designation, contactNo, siteId, onlyActive).stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+    public Page<LaborerDTO> searchLaborers(String fullName, String grNo, String designation, String contactNo, Long siteId,
+            boolean onlyActive, Pageable pageable) {
+        return laborerRepository.findLaborers(fullName, grNo, designation, contactNo, siteId, onlyActive, pageable)
+                .map(this::mapToDTO);
     }
 
     @Override
@@ -278,14 +278,6 @@ public class LaborerServiceImpl implements LaborerService {
                 .siteAddress(laborer.getSiteAddress())
                 .currentSiteId(laborer.getCurrentSiteId())
                 .currentSiteName(laborer.getCurrentSite() != null ? laborer.getCurrentSite().getName() : null)
-                .permanentAddress(mapAddressToDTO(laborer.getPermanentAddress()))
-                .contactNo(laborer.getContactNo())
-                .dateOfBirth(laborer.getDateOfBirth())
-                .dateOfJoining(laborer.getDateOfJoining())
-                .height(laborer.getHeight())
-                .weight(laborer.getWeight())
-                .bloodGroup(laborer.getBloodGroup())
-                .joinByReference(laborer.getJoinByReference())
                 .permanentAddress(mapAddressToDTO(laborer.getPermanentAddress()))
                 .contactNo(laborer.getContactNo())
                 .dateOfBirth(laborer.getDateOfBirth())

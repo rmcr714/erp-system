@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,11 +25,14 @@ public interface LaborerRepository extends JpaRepository<Laborer, Long> {
            "(:contactNo IS NULL OR :contactNo = '' OR COALESCE(l.contactNo, '') LIKE CONCAT('%', :contactNo, '%')) AND " +
            "(:siteId IS NULL OR l.currentSiteId = :siteId) AND " +
            "(:onlyActive = false OR l.status = com.antigravity.erp.modules.labor.enums.LaborerStatus.ACTIVE)")
-    List<Laborer> findLaborers(
+    Page<Laborer> findLaborers(
             @Param("fullName") String fullName, 
             @Param("grNo") String grNo, 
             @Param("designation") String designation, 
             @Param("contactNo") String contactNo, 
             @Param("siteId") Long siteId,
-            @Param("onlyActive") boolean onlyActive);
+            @Param("onlyActive") boolean onlyActive,
+            Pageable pageable);
+
+    List<Laborer> findByCurrentSiteIdAndStatusIn(Long siteId, java.util.Collection<com.antigravity.erp.modules.labor.enums.LaborerStatus> statuses);
 }

@@ -36,6 +36,13 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
     const [data, setData] = useState<MonthlyMusterRow[]>([]);
+    const [totalElements, setTotalElements] = useState(0);
+    const [monthlyTotals, setMonthlyTotals] = useState({
+        gross: 0,
+        advances: 0,
+        net: 0,
+        debit: 0
+    });
     const [dirtyRows, setDirtyRows] = useState<Record<string, true>>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -66,16 +73,24 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
     }, [isPastMonth]);
 
     useEffect(() => {
-        loadPayroll();
+        setCurrentPage(1);
+        loadPayroll(1);
     }, [month, year, siteId]);
 
-    const loadPayroll = async () => {
+    const loadPayroll = async (page: number) => {
         setLoading(true);
         try {
-            const rows = await attendanceService.getMonthlyMuster(month, year, siteId);
-            setData(rows.map(recalculateRow));
+            const response = await attendanceService.getMonthlyMuster(month, year, siteId, page - 1, pageSize);
+            setData(response.page.content.map(recalculateRow));
+            setTotalElements(response.page.totalElements);
+            setMonthlyTotals({
+                gross: response.totals.grossSalary,
+                advances: response.totals.totalAdvance,
+                net: response.totals.netBalance,
+                debit: response.totals.debitBalance
+            });
             setDirtyRows({});
-            setCurrentPage(1);
+            setCurrentPage(page);
         } catch (error) {
             toast.error('Failed to load payroll');
         } finally {
@@ -88,7 +103,7 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
         try {
             await attendanceService.startMonth(month, year, siteId);
             toast.success(`Payroll started for ${monthNames[month - 1]}`);
-            loadPayroll();
+            loadPayroll(1);
         } catch (error) {
             toast.error('Failed to start month');
         } finally {
@@ -100,10 +115,7 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
         return [...data].sort((a, b) => a.grNo.localeCompare(b.grNo, undefined, { numeric: true, sensitivity: 'base' }));
     }, [data]);
 
-    const paginatedData = useMemo(() => {
-        const start = (currentPage - 1) * pageSize;
-        return sortedData.slice(start, start + pageSize);
-    }, [sortedData, currentPage]);
+    const paginatedData = sortedData; // Data is already paginated from server
 
     const groupedData = useMemo(() => {
         const groups: Record<string, MonthlyMusterRow[]> = {};
@@ -116,7 +128,7 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
     }, [paginatedData]);
 
     const designations = useMemo(() => Object.keys(groupedData).sort(), [groupedData]);
-    const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+    const totalPages = Math.max(1, Math.ceil(totalElements / pageSize));
 
     const scrollToSection = (designation: string) => {
         const element = document.getElementById(`section-${designation}`);
@@ -125,17 +137,7 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
         }
     };
 
-    const totals = useMemo(() => {
-        return data.reduce(
-            (acc, row) => ({
-                gross: acc.gross + row.totalSalary,
-                advances: acc.advances + row.totalAdvance,
-                net: acc.net + row.closingBalance,
-                debit: acc.debit + row.debitBalance
-            }),
-            { gross: 0, advances: 0, net: 0, debit: 0 }
-        );
-    }, [data]);
+    const totals = monthlyTotals;
 
     const updatePayrollField = (grNo: string, field: 'salaryPerDay' | 'siteAdvance' | 'onlineAdvance' | 'debitBalance' | 'remarks', value: string) => {
         const isNumberField = field !== 'remarks';
@@ -174,7 +176,7 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
             await attendanceService.updatePayrollBatch(requests);
             setDirtyRows({});
             toast.success(`Saved payroll for ${requests.length} workers`);
-            await loadPayroll();
+            await loadPayroll(currentPage);
         } catch (error) {
             toast.error('Failed to save payroll');
         } finally {
@@ -301,14 +303,14 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
             <div className="flex-shrink-0 border border-white/10 rounded-lg bg-slate-900/80 flex flex-col divide-y divide-white/5">
                 <div className="flex items-center justify-between p-3">
                     <div className="text-[11px] font-black uppercase tracking-widest text-slate-500">
-                        {data.length} Workers - {Object.keys(dirtyRows).length} Edited
+                        {totalElements} Workers - {Object.keys(dirtyRows).length} Edited
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30 text-sm font-bold">
+                        <button onClick={() => loadPayroll(currentPage - 1)} disabled={currentPage === 1 || loading} className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30 text-sm font-bold">
                             Prev
                         </button>
                         <span className="text-sm text-slate-400 font-mono px-2">Page {currentPage} of {totalPages}</span>
-                        <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30 text-sm font-bold">
+                        <button onClick={() => loadPayroll(currentPage + 1)} disabled={currentPage === totalPages || loading} className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30 text-sm font-bold">
                             Next
                         </button>
                     </div>

@@ -2,9 +2,25 @@ import type { MonthlyMusterRow, AttendanceSaveRequest, PayrollUpdateRequest } fr
 
 const API_BASE_URL = '/api/attendance';
 
+export interface PaginatedMuster {
+    page: {
+        content: MonthlyMusterRow[];
+        totalElements: number;
+        totalPages: number;
+        size: number;
+        number: number;
+    };
+    totals: {
+        grossSalary: number;
+        totalAdvance: number;
+        netBalance: number;
+        debitBalance: number;
+    };
+}
+
 export const attendanceService = {
-    async getMonthlyMuster(month: number, year: number, siteId: number): Promise<MonthlyMusterRow[]> {
-        const response = await fetch(`${API_BASE_URL}/muster?month=${month}&year=${year}&siteId=${siteId}`);
+    async getMonthlyMuster(month: number, year: number, siteId: number, page = 0, size = 100): Promise<PaginatedMuster> {
+        const response = await fetch(`${API_BASE_URL}/muster?month=${month}&year=${year}&siteId=${siteId}&page=${page}&size=${size}`);
         if (!response.ok) throw new Error('Failed to fetch muster');
         return response.json();
     },

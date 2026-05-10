@@ -26,6 +26,8 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.antigravity.erp.modules.attendance.dto.MonthlyMusterResponse;
+
 @Service
 @RequiredArgsConstructor
 public class AttendanceService {
@@ -38,23 +40,49 @@ public class AttendanceService {
     private final SiteService siteService;
 
     @Transactional(readOnly = true)
-    public List<MonthlyMusterRowDTO> getMonthlyMuster(Integer month, Integer year, Long siteId) {
+    public MonthlyMusterResponse getMonthlyMuster(Integer month, Integer year, Long siteId, Pageable pageable) {
         siteService.requireSite(siteId);
-        List<AttendanceMuster> musters = musterRepository.findBySiteIdAndMonthAndYear(siteId, month, year);
-        if (musters.isEmpty()) {
-            return Collections.emptyList();
+        Page<AttendanceMuster> musterPage = musterRepository.findBySiteIdAndMonthAndYear(siteId, month, year, pageable);
+        
+        // Calculate site-wide totals
+        Object[] totalsData = (Object[]) payrollRepository.getSiteMonthlyTotals(siteId, month, year);
+        MonthlyMusterResponse.MonthlyTotals totals = MonthlyMusterResponse.MonthlyTotals.builder()
+                .grossSalary(BigDecimal.ZERO)
+                .totalAdvance(BigDecimal.ZERO)
+                .netBalance(BigDecimal.ZERO)
+                .debitBalance(BigDecimal.ZERO)
+                .build();
+
+        if (totalsData != null && totalsData.length > 0 && totalsData[0] != null) {
+            Object[] t = (Object[]) totalsData[0];
+            totals = MonthlyMusterResponse.MonthlyTotals.builder()
+                    .grossSalary(t[0] != null ? (BigDecimal) t[0] : BigDecimal.ZERO)
+                    .totalAdvance(t[1] != null ? (BigDecimal) t[1] : BigDecimal.ZERO)
+                    .netBalance(t[2] != null ? (BigDecimal) t[2] : BigDecimal.ZERO)
+                    .debitBalance(t[3] != null ? (BigDecimal) t[3] : BigDecimal.ZERO)
+                    .build();
         }
 
-        List<MonthlyPayroll> payrolls = payrollRepository.findBySiteIdAndMonthAndYear(siteId, month, year);
-        List<Laborer> laborers = laborerRepository.findAll();
-        
-        Map<Long, MonthlyPayroll> payrollMap = payrolls.stream()
-                .collect(Collectors.toMap(MonthlyPayroll::getWorkerId, p -> p));
-        
+        if (musterPage.isEmpty()) {
+            return MonthlyMusterResponse.builder()
+                    .page(Page.empty(pageable))
+                    .totals(totals)
+                    .build();
+        }
+
+        List<AttendanceMuster> musters = musterPage.getContent();
+        Set<Long> workerIds = musters.stream().map(AttendanceMuster::getWorkerId).collect(Collectors.toSet());
+
+        // Optimize: Only load laborers who are actually in the muster page
+        List<Laborer> laborers = laborerRepository.findAllById(workerIds);
         Map<Long, Laborer> laborerMap = laborers.stream()
                 .collect(Collectors.toMap(Laborer::getId, l -> l));
 
-        return musters.stream().map(muster -> {
+        List<MonthlyPayroll> payrolls = payrollRepository.findBySiteIdAndMonthAndYear(siteId, month, year);
+        Map<Long, MonthlyPayroll> payrollMap = payrolls.stream()
+                .collect(Collectors.toMap(MonthlyPayroll::getWorkerId, p -> p));
+
+        List<MonthlyMusterRowDTO> rows = musters.stream().map(muster -> {
             MonthlyPayroll payroll = payrollMap.get(muster.getWorkerId());
             Laborer laborer = laborerMap.get(muster.getWorkerId());
 
@@ -103,19 +131,28 @@ public class AttendanceService {
                     .isActive(muster.getIsActive())
                     .build();
         }).collect(Collectors.toList());
+
+        return MonthlyMusterResponse.builder()
+                .page(new PageImpl<>(rows, pageable, musterPage.getTotalElements()))
+                .totals(totals)
+                .build();
     }
 
     @Transactional
     public void startMonth(Integer month, Integer year, Long siteId) {
         siteService.requireSite(siteId);
-        List<LaborerDTO> activeLaborers = getAttendanceLaborers(siteId);
+        List<Laborer> activeLaborers = laborerRepository.findByCurrentSiteIdAndStatusIn(
+                siteId, 
+                Arrays.asList(LaborerStatus.ACTIVE, LaborerStatus.ON_LEAVE)
+        );
+        
         Integer prevMonth = month == 1 ? 12 : month - 1;
         Integer prevYear = month == 1 ? year - 1 : year;
 
         Map<Long, MonthlyPayroll> prevPayrolls = payrollRepository.findBySiteIdAndMonthAndYear(siteId, prevMonth, prevYear)
                 .stream().collect(Collectors.toMap(MonthlyPayroll::getWorkerId, p -> p));
 
-        for (LaborerDTO laborer : activeLaborers) {
+        for (Laborer laborer : activeLaborers) {
             String grNo = laborer.getGrNo();
             Long workerId = laborer.getId();
             
@@ -165,7 +202,10 @@ public class AttendanceService {
     @Transactional
     public void saveAttendance(String grNo, Long siteId, Integer month, Integer year, Map<Integer, Double> dailyUpdates) {
         siteService.requireSite(siteId);
-        Map<String, LaborerDTO> laborerMap = getAttendanceLaborers(siteId).stream()
+        Map<String, Laborer> laborerMap = laborerRepository.findByCurrentSiteIdAndStatusIn(
+                    siteId, 
+                    Arrays.asList(LaborerStatus.ACTIVE, LaborerStatus.ON_LEAVE)
+                ).stream()
                 .collect(Collectors.toMap(laborer -> normalizeGrNo(laborer.getGrNo()), laborer -> laborer));
         saveAttendance(grNo, siteId, month, year, dailyUpdates, laborerMap);
     }
@@ -177,7 +217,10 @@ public class AttendanceService {
         }
         Long siteId = requests.get(0).getSiteId();
         siteService.requireSite(siteId);
-        Map<String, LaborerDTO> laborerMap = getAttendanceLaborers(siteId).stream()
+        Map<String, Laborer> laborerMap = laborerRepository.findByCurrentSiteIdAndStatusIn(
+                    siteId, 
+                    Arrays.asList(LaborerStatus.ACTIVE, LaborerStatus.ON_LEAVE)
+                ).stream()
                 .collect(Collectors.toMap(laborer -> normalizeGrNo(laborer.getGrNo()), laborer -> laborer));
 
         for (AttendanceSaveRequest request : requests) {
@@ -193,9 +236,13 @@ public class AttendanceService {
     }
 
     private void saveAttendance(String grNo, Long siteId, Integer month, Integer year, Map<Integer, Double> dailyUpdates,
-                                Map<String, LaborerDTO> laborerMap) {
+                                Map<String, Laborer> laborerMap) {
         try {
-            LaborerDTO laborer = requireLaborer(grNo, laborerMap);
+            Laborer laborer = laborerMap.get(normalizeGrNo(grNo));
+            if (laborer == null) {
+                laborer = laborerRepository.findByGrNoIgnoreCase(normalizeGrNo(grNo))
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Laborer not found"));
+            }
             Long workerId = laborer.getId();
             AttendanceMuster muster = musterRepository.findByWorkerIdAndSiteIdAndMonthAndYear(workerId, siteId, month, year)
                     .orElse(AttendanceMuster.builder()
@@ -216,33 +263,19 @@ public class AttendanceService {
                 Double units = entry.getValue();
                 currentData.put(day, units);
                 
-                if (laborer != null) {
-                    try {
-                        updateDailyAttendance(laborer, siteId, year, month, day, units);
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to update Daily Search record: " + e.getMessage());
-                    }
-                }
+                updateDailyAttendance(laborer, siteId, year, month, day, units);
             }
             
             muster.setAttendanceData(currentData);
             muster.setGrNo(laborer.getGrNo());
-            try {
-                musterRepository.save(muster);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to update Attendance Muster: " + e.getMessage());
-            }
+            musterRepository.save(muster);
 
             // Sync to Monthly Payroll
-            try {
-                syncMonthlyPayroll(workerId, siteId, month, year);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to update Monthly Payroll: " + e.getMessage());
-            }
+            syncMonthlyPayroll(workerId, siteId, month, year);
             
         } catch (Exception e) {
             System.err.println("Critical failure during Attendance Sync: " + e.getMessage());
-            throw e; // Rethrow to trigger @Transactional rollback
+            throw e; 
         }
     }
 
@@ -354,10 +387,6 @@ public class AttendanceService {
                         .totalAdvance(BigDecimal.ZERO)
                         .build());
 
-        // Rate is strictly maintained in the payroll record now.
-        // It should either be set on month creation or manually via the rate update endpoint.
-
-        // 1. Calculate Units and Gross
         Map<Integer, Double> attendanceData = (muster != null && muster.getAttendanceData() != null) 
                 ? muster.getAttendanceData() 
                 : new HashMap<>();
@@ -370,8 +399,6 @@ public class AttendanceService {
                 ? payroll.getRate().multiply(BigDecimal.valueOf(totalUnits)) 
                 : BigDecimal.ZERO;
 
-        // 2. We no longer fetch advances from a separate table.
-        // We use whatever is already in the 'payroll' record (set "somewhere else").
         BigDecimal siteAdv = payroll.getSiteAdvance() != null ? payroll.getSiteAdvance() : BigDecimal.ZERO;
         BigDecimal onlineAdv = payroll.getOnlineAdvance() != null ? payroll.getOnlineAdvance() : BigDecimal.ZERO;
         BigDecimal totalAdv = siteAdv.add(onlineAdv);
@@ -379,7 +406,6 @@ public class AttendanceService {
         BigDecimal debitBalance = payroll.getDebitBalance() != null ? payroll.getDebitBalance() : BigDecimal.ZERO;
         BigDecimal netBalance = grossSalary.subtract(totalAdv).subtract(debitBalance);
 
-        // 4. Update Payroll Record
         payroll.setTotalUnits(BigDecimal.valueOf(totalUnits));
         payroll.setGrNo(findLaborerById(workerId).getGrNo());
         payroll.setGrossSalary(grossSalary);
@@ -392,7 +418,7 @@ public class AttendanceService {
         payrollRepository.save(payroll);
     }
 
-    private void updateDailyAttendance(LaborerDTO laborer, Long siteId, Integer year, Integer month, Integer day, Double units) {
+    private void updateDailyAttendance(Laborer laborer, Long siteId, Integer year, Integer month, Integer day, Double units) {
         DailyAttendance daily = dailyRepository.findByWorkerIdAndSiteIdAndYearAndMonthAndDay(laborer.getId(), siteId, year, month, day)
                 .orElse(DailyAttendance.builder()
                         .workerId(laborer.getId())
@@ -412,17 +438,6 @@ public class AttendanceService {
         daily.setDesignation(laborer.getDesignation());
         
         dailyRepository.save(daily);
-    }
-
-    private BigDecimal calculateTotalSalary(Map<Integer, Double> attendanceData, BigDecimal rate) {
-        if (attendanceData == null || rate == null) return BigDecimal.ZERO;
-        
-        double totalUnits = attendanceData.values().stream()
-                .filter(Objects::nonNull)
-                .mapToDouble(Double::doubleValue)
-                .sum();
-                
-        return rate.multiply(BigDecimal.valueOf(totalUnits));
     }
 
     private MonthlyPayroll getOrCreatePayroll(String grNo, Long siteId, Integer month, Integer year) {
@@ -447,14 +462,6 @@ public class AttendanceService {
 
     private BigDecimal valueOrZero(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
-    }
-
-    private LaborerDTO requireLaborer(String grNo, Map<String, LaborerDTO> laborerMap) {
-        LaborerDTO laborer = laborerMap.get(normalizeGrNo(grNo));
-        if (laborer == null || laborer.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Laborer with GR No " + grNo + " not found.");
-        }
-        return laborer;
     }
 
     private Laborer findLaborerByGrNo(String grNo) {
@@ -518,13 +525,5 @@ public class AttendanceService {
                 .collect(Collectors.toList());
         
         return new PageImpl<>(dtos, pageable, attendancePage.getTotalElements());
-    }
-
-    private List<LaborerDTO> getAttendanceLaborers(Long siteId) {
-        return laborerService.getAllLaborers().stream()
-                .filter(l -> Objects.equals(l.getCurrentSiteId(), siteId))
-                .filter(l -> l.getStatus() == com.antigravity.erp.modules.labor.enums.LaborerStatus.ACTIVE || 
-                            l.getStatus() == com.antigravity.erp.modules.labor.enums.LaborerStatus.ON_LEAVE)
-                .collect(Collectors.toList());
     }
 }

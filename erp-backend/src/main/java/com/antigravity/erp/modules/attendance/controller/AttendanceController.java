@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import com.antigravity.erp.modules.attendance.dto.MonthlyMusterResponse;
+
 @RestController
 @RequestMapping("/api/attendance")
 @RequiredArgsConstructor
@@ -23,12 +25,15 @@ public class AttendanceController {
     private final AttendanceService attendanceService;
 
     @GetMapping("/muster")
-    public ResponseEntity<List<MonthlyMusterRowDTO>> getMonthlyMuster(
+    public ResponseEntity<MonthlyMusterResponse> getMonthlyMuster(
             @RequestParam(name = "month") Integer month,
             @RequestParam(name = "year") Integer year,
-            @RequestParam(name = "siteId") Long siteId) {
-        System.out.println("Fetching attendance muster for: " + month + "/" + year);
-        return ResponseEntity.ok(attendanceService.getMonthlyMuster(month, year, siteId));
+            @RequestParam(name = "siteId") Long siteId,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "100") int size) {
+        System.out.println("Fetching attendance muster for: " + month + "/" + year + " page: " + page);
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(attendanceService.getMonthlyMuster(month, year, siteId, pageable));
     }
 
     @PostMapping("/start-month")

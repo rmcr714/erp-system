@@ -32,6 +32,7 @@ interface LaborersPageProps {
 
 const LaborersPage: React.FC<LaborersPageProps> = ({ siteId }) => {
   const [laborers, setLaborers] = useState<Laborer[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
   const [searchCriteria, setSearchCriteria] = useState<SearchCriteria>({
     name: '',
     grNo: '',
@@ -52,23 +53,33 @@ const LaborersPage: React.FC<LaborersPageProps> = ({ siteId }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(50);
 
-  useEffect(() => {
-    // Load all laborers on initial page load only
-    const fetchInitialData = async () => {
-      setLoading(true);
-      try {
-        const data = await laborService.getAllLaborers({ siteId });
-        setLaborers(data);
-        setCurrentPage(1); // Reset to page 1 on new data
-      } catch (err) {
-        console.error("Error fetching laborers:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchData = async (page: number, criteria: SearchCriteria) => {
+    setLoading(true);
+    try {
+      const response = await laborService.getAllLaborers({ 
+        ...criteria, 
+        siteId,
+        page,
+        size: pageSize
+      });
+      setLaborers(response.content);
+      setTotalElements(response.totalElements);
+    } catch (err) {
+      console.error("Error fetching laborers:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchInitialData();
+  useEffect(() => {
+    fetchData(1, searchCriteria);
+    setCurrentPage(1);
   }, [siteId]);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    fetchData(newPage, searchCriteria);
+  };
 
   const handleSearchChange = (field: keyof SearchCriteria, value: string | boolean) => {
     setSearchCriteria(prev => ({
@@ -77,23 +88,14 @@ const LaborersPage: React.FC<LaborersPageProps> = ({ siteId }) => {
     }));
   };
 
-  const performSearch = async (criteria: SearchCriteria) => {
-    setLoading(true);
-    try {
-      const data = await laborService.getAllLaborers({ ...criteria, siteId });
-      setLaborers(data);
-      setCurrentPage(1); // Reset to page 1 on search
-    } catch (err) {
-      console.error("Error fetching laborers:", err);
-    } finally {
-      setLoading(false);
-    }
+  const performSearch = (criteria = searchCriteria) => {
+    setCurrentPage(1);
+    fetchData(1, criteria);
   };
 
   // Pagination Logic
-  const totalPages = Math.ceil(laborers.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedLaborers = laborers.slice(startIndex, startIndex + pageSize);
+  const totalPages = Math.ceil(totalElements / pageSize);
+  const paginatedLaborers = laborers; // Already paginated from server
 
   const clearFilters = () => {
     const defaultCriteria = {
@@ -295,12 +297,12 @@ const LaborersPage: React.FC<LaborersPageProps> = ({ siteId }) => {
                 '⏳ Searching...'
               ) : (
                 <>
-                  Showing <span className="text-accent-primary font-bold">{Math.min(startIndex + 1, laborers.length)}-{Math.min(startIndex + pageSize, laborers.length)}</span> of <span className="font-bold">{laborers.length}</span> laborers
+                  Showing <span className="text-accent-primary font-bold">{Math.min((currentPage - 1) * pageSize + 1, totalElements)}-{Math.min(currentPage * pageSize, totalElements)}</span> of <span className="font-bold">{totalElements}</span> laborers
                 </>
               )}
             </p>
             <button
-              onClick={() => performSearch(searchCriteria)}
+              onClick={() => performSearch()}
               disabled={loading}
               className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-all active:scale-95 ${
                 loading
@@ -333,15 +335,15 @@ const LaborersPage: React.FC<LaborersPageProps> = ({ siteId }) => {
               </span>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1 || loading}
                   className="px-4 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-30 rounded-lg text-xs font-bold transition-all border border-border-subtle"
                 >
                   Previous
                 </button>
                 <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages || loading}
                   className="px-4 py-2 bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary disabled:opacity-30 rounded-lg text-xs font-bold transition-all border border-accent-primary/30"
                 >
                   Next
@@ -361,9 +363,8 @@ const LaborersPage: React.FC<LaborersPageProps> = ({ siteId }) => {
           isOpen={isExcelImportOpen}
           siteId={siteId}
           onClose={() => setIsExcelImportOpen(false)}
-          onSuccess={async () => {
-            const data = await laborService.getAllLaborers({ siteId });
-            setLaborers(data);
+          onSuccess={() => {
+            fetchData(currentPage, searchCriteria);
           }}
         />
 
@@ -383,10 +384,8 @@ const LaborersPage: React.FC<LaborersPageProps> = ({ siteId }) => {
             setEditingLaborer(null);
           }}
           laborer={editingLaborer}
-          onSuccess={async () => {
-            // Refresh the laborers list
-            const data = await laborService.getAllLaborers({ ...searchCriteria, siteId });
-            setLaborers(data);
+          onSuccess={() => {
+            fetchData(currentPage, searchCriteria);
           }}
         />
       </main>

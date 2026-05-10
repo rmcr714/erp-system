@@ -5,6 +5,8 @@ import com.antigravity.erp.modules.labor.dto.LaborerDTO;
 import com.antigravity.erp.modules.labor.service.ExcelImportService;
 import com.antigravity.erp.modules.labor.service.LaborerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,15 +26,19 @@ public class LaborerController {
     private ExcelImportService excelImportService;
 
     @GetMapping
-    public List<LaborerDTO> getAllLaborers(
+    public Page<LaborerDTO> getAllLaborers(
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "grNo", required = false) String grNo,
             @RequestParam(name = "designation", required = false) String designation,
             @RequestParam(name = "contactNo", required = false) String contactNo,
             @RequestParam(name = "siteId", required = false) Long siteId,
-            @RequestParam(name = "onlyActive", defaultValue = "false") boolean onlyActive) {
+            @RequestParam(name = "onlyActive", defaultValue = "false") boolean onlyActive,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "50") int size) {
 
-        System.out.println("Search Request: name=" + name + ", grNo=" + grNo + ", designation=" + designation + ", contactNo=" + contactNo + ", onlyActive=" + onlyActive);
+        System.out.println("Search Request: name=" + name + ", grNo=" + grNo + ", designation=" + designation + ", contactNo=" + contactNo + ", onlyActive=" + onlyActive + ", page=" + page + ", size=" + size);
+
+        org.springframework.data.domain.Pageable pageable = PageRequest.of(page, size);
 
         if ((name != null && !name.isEmpty()) ||
             (grNo != null && !grNo.isEmpty()) ||
@@ -40,9 +46,9 @@ public class LaborerController {
             (contactNo != null && !contactNo.isEmpty()) ||
             siteId != null ||
             onlyActive) {
-            return laborService.searchLaborers(name, grNo, designation, contactNo, siteId, onlyActive);
+            return laborService.searchLaborers(name, grNo, designation, contactNo, siteId, onlyActive, pageable);
         }
-        return laborService.getAllLaborers();
+        return laborService.getAllLaborers(pageable);
     }
 
     @PostMapping

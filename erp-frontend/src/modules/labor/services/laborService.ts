@@ -10,22 +10,23 @@ interface SearchCriteria {
   contactNo?: string;
   siteId?: number;
   onlyActive?: boolean;
+  page?: number;
+  size?: number;
+}
+
+export interface PaginatedLaborers {
+  content: Laborer[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
 }
 
 export const laborService = {
-  async getAllLaborers(searchCriteria?: SearchCriteria | string): Promise<Laborer[]> {
-    let url = API_BASE_URL;
-
-    // Handle both old string-based search and new criteria-based search
-    if (typeof searchCriteria === 'string') {
-      // Legacy support for simple search string
-      url = searchCriteria 
-        ? `${API_BASE_URL}?search=${encodeURIComponent(searchCriteria)}` 
-        : API_BASE_URL;
-    } else if (searchCriteria && typeof searchCriteria === 'object') {
-      // New criteria-based search
-      const params = new URLSearchParams();
-      
+  async getAllLaborers(searchCriteria?: SearchCriteria): Promise<PaginatedLaborers> {
+    const params = new URLSearchParams();
+    
+    if (searchCriteria) {
       if (searchCriteria.name) params.append('name', searchCriteria.name);
       if (searchCriteria.grNo) params.append('grNo', searchCriteria.grNo);
       if (searchCriteria.designation && searchCriteria.designation !== '*') params.append('designation', searchCriteria.designation);
@@ -33,10 +34,12 @@ export const laborService = {
       if (searchCriteria.siteId) params.append('siteId', searchCriteria.siteId.toString());
       if (searchCriteria.onlyActive) params.append('onlyActive', 'true');
       if (searchCriteria.idProofNumber) params.append('idProofNumber', searchCriteria.idProofNumber);
-
-      const queryString = params.toString();
-      url = queryString ? `${API_BASE_URL}?${queryString}` : API_BASE_URL;
+      if (searchCriteria.page !== undefined) params.append('page', (searchCriteria.page - 1).toString()); // Spring uses 0-indexed pages
+      if (searchCriteria.size !== undefined) params.append('size', searchCriteria.size.toString());
     }
+
+    const queryString = params.toString();
+    const url = queryString ? `${API_BASE_URL}?${queryString}` : API_BASE_URL;
       
     const response = await fetch(url);
     if (!response.ok) {

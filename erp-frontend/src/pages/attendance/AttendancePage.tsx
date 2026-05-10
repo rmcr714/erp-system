@@ -13,6 +13,9 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ siteId }) => {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
     const [data, setData] = useState<MonthlyMusterRow[]>([]);
+    const [totalElements, setTotalElements] = useState(0);
+    const [currentPage, setCurrentPage] = useState(0); // 0-indexed for backend
+    const [pageSize] = useState(100);
     const [loading, setLoading] = useState(true);
     const [startingMonth, setStartingMonth] = useState(false);
     const [searchQuery] = useState('');
@@ -21,14 +24,17 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ siteId }) => {
     const isEditMode = window.location.hash.startsWith('#attendance/edit');
 
     useEffect(() => {
-        loadMuster();
+        setCurrentPage(0);
+        loadMuster(0);
     }, [month, year, siteId]);
 
-    const loadMuster = async () => {
+    const loadMuster = async (page: number) => {
         setLoading(true);
         try {
-            const muster = await attendanceService.getMonthlyMuster(month, year, siteId);
-            setData(muster);
+            const response = await attendanceService.getMonthlyMuster(month, year, siteId, page, pageSize);
+            setData(response.page.content);
+            setTotalElements(response.page.totalElements);
+            setCurrentPage(page);
         } catch (error) {
             toast.error('Failed to load attendance data');
         } finally {
@@ -188,21 +194,49 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ siteId }) => {
                         )}
                     </div>
                 ) : (
-                    <AttendanceMasterGrid 
-                        ref={gridRef}
-                        month={month}
-                        year={year}
-                        siteId={siteId}
-                        initialData={filteredData}
-                        isEditMode={isEditMode}
-                        onDataChange={(updated) => {
-                            // Update local data when child saves
-                            setData(prev => prev.map(p => {
-                                const up = updated.find(u => u.grNo === p.grNo);
-                                return up || p;
-                            }));
-                        }}
-                    />
+                    <>
+                        <AttendanceMasterGrid 
+                            ref={gridRef}
+                            month={month}
+                            year={year}
+                            siteId={siteId}
+                            initialData={filteredData}
+                            isEditMode={isEditMode}
+                            onDataChange={(updated) => {
+                                // Update local data when child saves
+                                setData(prev => prev.map(p => {
+                                    const up = updated.find(u => u.grNo === p.grNo);
+                                    return up || p;
+                                }));
+                            }}
+                        />
+                        
+                        {/* Worker Pagination Controls */}
+                        {totalElements > pageSize && (
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-slate-900/90 backdrop-blur-md border border-white/10 p-2 px-6 rounded-full shadow-2xl z-20">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                    Workers {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements}
+                                </span>
+                                <div className="h-4 w-[1px] bg-white/10"></div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => loadMuster(currentPage - 1)}
+                                        disabled={currentPage === 0 || loading}
+                                        className="p-2 px-4 bg-white/5 hover:bg-white/10 disabled:opacity-20 rounded-lg text-xs font-bold transition-all border border-white/10"
+                                    >
+                                        Previous
+                                    </button>
+                                    <button
+                                        onClick={() => loadMuster(currentPage + 1)}
+                                        disabled={(currentPage + 1) * pageSize >= totalElements || loading}
+                                        className="p-2 px-4 bg-sky-600/20 hover:bg-sky-600/40 text-sky-400 disabled:opacity-20 rounded-lg text-xs font-bold transition-all border border-sky-500/30"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

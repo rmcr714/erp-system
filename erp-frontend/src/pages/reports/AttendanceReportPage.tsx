@@ -3,6 +3,7 @@ import Sidebar from '../../components/common/Sidebar';
 import { reportService } from '../../modules/reports/services/reportService';
 import { type MusterRow } from '../../modules/reports/types';
 import AttendanceReportGrid from '../../modules/reports/components/AttendanceReportGrid';
+import { toast } from 'react-hot-toast';
 
 interface AttendanceReportPageProps {
     siteId: number;
@@ -11,6 +12,9 @@ interface AttendanceReportPageProps {
 const AttendanceReportPage: React.FC<AttendanceReportPageProps> = ({ siteId }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [data, setData] = useState<MusterRow[]>([]);
+    const [totalElements, setTotalElements] = useState(0);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [pageSize] = useState(100);
     const [loading, setLoading] = useState(true);
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
@@ -24,14 +28,18 @@ const AttendanceReportPage: React.FC<AttendanceReportPageProps> = ({ siteId }) =
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     useEffect(() => {
-        fetchReport();
+        setCurrentPage(0);
+        fetchReport(0);
     }, [month, year, siteId]);
 
-    const fetchReport = async () => {
+    const fetchReport = async (page: number) => {
         setLoading(true);
         try {
-            const result = await reportService.getAttendanceReport(month, year, siteId);
-            setData(result);
+            const response = await reportService.getAttendanceReport(month, year, siteId, page, pageSize);
+            // The service now returns PaginatedMuster
+            setData(response.page.content as any);
+            setTotalElements(response.page.totalElements);
+            setCurrentPage(page);
         } catch (error) {
             console.error("Failed to fetch report", error);
         } finally {
@@ -39,9 +47,24 @@ const AttendanceReportPage: React.FC<AttendanceReportPageProps> = ({ siteId }) =
         }
     };
 
-    const designations = useMemo(() => 
-        Array.from(new Set(data.map(d => d.designation))).sort(), 
-    [data]);
+    const totalPages = Math.max(1, Math.ceil(totalElements / pageSize));
+
+    const handleExportAll = async () => {
+        try {
+            toast.loading('Preparing full report...', { id: 'export' });
+            // Fetch everything (max 10000 for export)
+            const response = await reportService.getAttendanceReport(month, year, siteId, 0, 10000);
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+            const monthName = monthNames[month - 1];
+            
+            const { exportAttendanceToExcel } = await import('../../modules/reports/utils/attendanceExport');
+            await exportAttendanceToExcel(response.page.content, monthName, year, daysArray);
+            toast.success('Report downloaded!', { id: 'export' });
+        } catch (error) {
+            toast.error('Export failed', { id: 'export' });
+        }
+    };
 
     return (
         <div className="flex h-screen w-screen font-inter bg-bg-main text-slate-200">
@@ -84,8 +107,15 @@ const AttendanceReportPage: React.FC<AttendanceReportPageProps> = ({ siteId }) =
                         </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                        <div className="relative flex items-center gap-4 bg-slate-900 border border-white/10 p-2 rounded-2xl animate-in fade-in zoom-in duration-300">
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <button 
+                            onClick={handleExportAll}
+                            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-900/20 flex items-center gap-2"
+                        >
+                            <span>📊</span> Download Full Excel
+                        </button>
+
+                        <div className="relative flex items-center gap-4 bg-slate-900 border border-white/10 p-2 rounded-2xl">
                             <span className="text-sm font-bold text-slate-400 pl-2">Filter Role:</span>
 
                             <div className="relative">
@@ -127,8 +157,7 @@ const AttendanceReportPage: React.FC<AttendanceReportPageProps> = ({ siteId }) =
                             </div>
                         </div>
 
-
-                        <div className="flex items-center gap-2 bg-slate-900 border border-white/10 p-2 rounded-2xl animate-in fade-in zoom-in duration-300">
+                        <div className="flex items-center gap-2 bg-slate-900 border border-white/10 p-2 rounded-2xl">
                             <div className="relative">
                                 <button onClick={() => setMonthDropdownOpen(!monthDropdownOpen)} className="flex items-center gap-2 bg-slate-800 text-indigo-400 font-bold px-4 py-2 rounded-xl border border-indigo-500/30 hover:bg-slate-700 transition-all focus:outline-none min-w-[120px] justify-between shadow-inner">
                                     <span>{monthNames[month - 1]}</span>
@@ -180,13 +209,38 @@ const AttendanceReportPage: React.FC<AttendanceReportPageProps> = ({ siteId }) =
                         <div className="text-slate-500 font-bold text-xl">No attendance data found for {monthNames[month - 1]} {year}.</div>
                     </div>
                 ) : (
-                    <AttendanceReportGrid 
-                        data={data}
-                        month={month}
-                        year={year}
-                        filterDesignation={filterDesignation}
-                        onDesignationChange={setFilterDesignation}
-                    />
+                    <>
+                        <AttendanceReportGrid 
+                            data={data}
+                            month={month}
+                            year={year}
+                            filterDesignation={filterDesignation}
+                            onDesignationChange={setFilterDesignation}
+                        />
+                        
+                        {/* Pagination Controls */}
+                        {totalElements > pageSize && (
+                            <div className="mt-6 flex items-center justify-center gap-4">
+                                <button 
+                                    onClick={() => fetchReport(currentPage - 1)} 
+                                    disabled={currentPage === 0 || loading} 
+                                    className="px-6 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 rounded-xl font-bold transition-all border border-white/10"
+                                >
+                                    Previous Page
+                                </button>
+                                <span className="text-slate-400 font-mono">
+                                    Page {currentPage + 1} of {totalPages} ({totalElements} Workers)
+                                </span>
+                                <button 
+                                    onClick={() => fetchReport(currentPage + 1)} 
+                                    disabled={currentPage + 1 >= totalPages || loading} 
+                                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 rounded-xl font-bold transition-all shadow-lg shadow-indigo-900/20"
+                                >
+                                    Next Page
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </main>
         </div>
