@@ -21,7 +21,11 @@ const formatCurrency = (value: number) => {
     return `₹${value.toLocaleString('en-IN')}`;
 };
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+    siteId: number;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ siteId }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -31,7 +35,7 @@ const Dashboard: React.FC = () => {
         const fetchStats = async () => {
             try {
                 setLoading(true);
-                const data = await dashboardService.getStats();
+                const data = await dashboardService.getStats(siteId);
                 setStats(data);
             } catch (err) {
                 setError('Could not load dashboard data');
@@ -41,7 +45,7 @@ const Dashboard: React.FC = () => {
             }
         };
         fetchStats();
-    }, []);
+    }, [siteId]);
 
     const todayDate = new Date();
     const greeting = todayDate.getHours() < 12 ? 'Good Morning' : todayDate.getHours() < 17 ? 'Good Afternoon' : 'Good Evening';

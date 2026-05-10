@@ -22,6 +22,7 @@ public class LaborerController {
             @RequestParam(name = "grNo", required = false) String grNo,
             @RequestParam(name = "designation", required = false) String designation,
             @RequestParam(name = "contactNo", required = false) String contactNo,
+            @RequestParam(name = "siteId", required = false) Long siteId,
             @RequestParam(name = "onlyActive", defaultValue = "false") boolean onlyActive) {
         
         System.out.println("Search Request: name=" + name + ", grNo=" + grNo + ", designation=" + designation + ", contactNo=" + contactNo + ", onlyActive=" + onlyActive);
@@ -30,8 +31,9 @@ public class LaborerController {
             (grNo != null && !grNo.isEmpty()) || 
             (designation != null && !designation.isEmpty()) || 
             (contactNo != null && !contactNo.isEmpty()) || 
+            siteId != null ||
             onlyActive) {
-            return laborService.searchLaborers(name, grNo, designation, contactNo, onlyActive);
+            return laborService.searchLaborers(name, grNo, designation, contactNo, siteId, onlyActive);
         }
         return laborService.getAllLaborers();
     }

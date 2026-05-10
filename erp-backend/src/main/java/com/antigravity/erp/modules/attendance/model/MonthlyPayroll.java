@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import com.antigravity.erp.modules.labor.model.Laborer;
+import com.antigravity.erp.modules.site.model.Site;
 
 import java.math.BigDecimal;
 
@@ -18,11 +19,21 @@ import java.math.BigDecimal;
 @IdClass(MonthlyPayrollId.class)
 @Table(name = "monthly_payroll",
        indexes = {
-           @Index(name = "idx_payroll_analytics", columnList = "year, month")
+           @Index(name = "idx_payroll_analytics", columnList = "year, month"),
+           @Index(name = "idx_payroll_gr_no", columnList = "gr_no"),
+           @Index(name = "idx_payroll_worker", columnList = "worker_id"),
+           @Index(name = "idx_payroll_site", columnList = "site_id")
        })
 public class MonthlyPayroll {
     @Id
-    @Column(name = "gr_no", nullable = false)
+    @Column(name = "worker_id", nullable = false)
+    private Long workerId;
+
+    @Id
+    @Column(name = "site_id", nullable = false)
+    private Long siteId;
+
+    @Column(name = "gr_no", nullable = false, length = 50)
     private String grNo;
 
     @Id
@@ -70,8 +81,12 @@ public class MonthlyPayroll {
     private String remarks = "";
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "gr_no", insertable = false, updatable = false)
+    @JoinColumn(name = "worker_id", insertable = false, updatable = false)
     private Laborer laborer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "site_id", insertable = false, updatable = false)
+    private Site site;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default

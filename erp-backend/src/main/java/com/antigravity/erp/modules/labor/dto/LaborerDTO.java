@@ -13,11 +13,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LaborerDTO {
+    private Long id;
     private String grNo;
     private String fullName;
     private String designation;
     private String employerName;
     private String siteAddress;
+    private Long currentSiteId;
+    private String currentSiteName;
     private AddressDTO permanentAddress;
     private String contactNo;
     private LocalDate dateOfBirth;
@@ -33,6 +36,7 @@ public class LaborerDTO {
     private java.math.BigDecimal salaryPerDay;
     private LaborerStatus status;
     private String photoUrl;
+    private String remarks;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

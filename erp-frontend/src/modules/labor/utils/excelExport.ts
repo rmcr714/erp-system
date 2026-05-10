@@ -36,7 +36,8 @@ export const exportLaborerToExcel = async (laborer: Partial<Laborer>, isDraft: b
     ["Branch Name", laborer.bankDetails?.branch || 'N/A'],
     ["Account Number", laborer.bankDetails?.accountNo || 'N/A'],
     ["IFSC Code", laborer.bankDetails?.ifscCode || 'N/A'],
-    ["Laborer Status", laborer.status || 'Active']
+    ["Laborer Status", laborer.status || 'Active'],
+    ["Remarks", laborer.remarks || '']
   ];
 
   // Add the data rows with styling

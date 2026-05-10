@@ -28,13 +28,14 @@ public class DashboardRepository {
      * Fetches all workforce counts in a single query.
      * Returns [total, active, inactive, onLeave]
      */
-    public long[] getWorkforceCounts() {
+    public long[] getWorkforceCounts(Long siteId) {
         Object[] row = (Object[]) em.createNativeQuery(
                 "SELECT COUNT(*), " +
                 "       COUNT(*) FILTER (WHERE status = 'ACTIVE'), " +
                 "       COUNT(*) FILTER (WHERE status = 'INACTIVE'), " +
                 "       COUNT(*) FILTER (WHERE status = 'ON_LEAVE') " +
-                "FROM laborers")
+                "FROM laborers WHERE current_site_id = :siteId")
+                .setParameter("siteId", siteId)
                 .getSingleResult();
 
         return new long[]{
@@ -48,12 +49,13 @@ public class DashboardRepository {
     /**
      * Returns designation -> count for ACTIVE laborers only.
      */
-    public Map<String, Long> countActiveByDesignation() {
+    public Map<String, Long> countActiveByDesignation(Long siteId) {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery(
                 "SELECT COALESCE(designation, 'Other'), COUNT(*) " +
-                "FROM laborers WHERE status = 'ACTIVE' " +
+                "FROM laborers WHERE status = 'ACTIVE' AND current_site_id = :siteId " +
                 "GROUP BY designation ORDER BY COUNT(*) DESC")
+                .setParameter("siteId", siteId)
                 .getResultList();
 
         Map<String, Long> result = new LinkedHashMap<>();
@@ -63,13 +65,15 @@ public class DashboardRepository {
         return result;
     }
 
-    public long countNewJoinees(int month, int year) {
+    public long countNewJoinees(int month, int year, Long siteId) {
         return ((Number) em.createNativeQuery(
                 "SELECT COUNT(*) FROM laborers " +
                 "WHERE EXTRACT(MONTH FROM date_of_joining) = :month " +
-                "AND EXTRACT(YEAR FROM date_of_joining) = :year")
+                "AND EXTRACT(YEAR FROM date_of_joining) = :year " +
+                "AND current_site_id = :siteId")
                 .setParameter("month", month)
                 .setParameter("year", year)
+                .setParameter("siteId", siteId)
                 .getSingleResult()).longValue();
     }
 
@@ -78,16 +82,18 @@ public class DashboardRepository {
     /**
      * Returns [markedCount, presentCount, totalUnits] for one day.
      */
-    public Object[] getTodayAttendanceSummary(LocalDate workDate) {
+    public Object[] getTodayAttendanceSummary(LocalDate workDate, Long siteId) {
         return (Object[]) em.createNativeQuery(
                 "SELECT COUNT(*), " +
                 "       COUNT(*) FILTER (WHERE COALESCE(units, 0) > 0), " +
                 "       COALESCE(SUM(units), 0) " +
                 "FROM daily_attendance_search das " +
-                "JOIN laborers l ON l.gr_no = das.gr_no " +
+                "JOIN laborers l ON l.id = das.worker_id " +
                 "WHERE das.work_date = :workDate " +
+                "AND das.site_id = :siteId " +
                 "AND l.status = 'ACTIVE'")
                 .setParameter("workDate", workDate)
+                .setParameter("siteId", siteId)
                 .getSingleResult();
     }
 
@@ -97,15 +103,16 @@ public class DashboardRepository {
      * Returns [grossPayroll, totalAdvance, netPayroll, totalDebit] for one month.
      * Single query instead of loading all MonthlyPayroll entities.
      */
-    public BigDecimal[] getPayrollAggregates(int month, int year) {
+    public BigDecimal[] getPayrollAggregates(int month, int year, Long siteId) {
         Object[] row = (Object[]) em.createNativeQuery(
                 "SELECT COALESCE(SUM(gross_salary), 0), " +
                 "       COALESCE(SUM(total_advance), 0), " +
                 "       COALESCE(SUM(net_balance), 0), " +
                 "       COALESCE(SUM(debit_balance), 0) " +
-                "FROM monthly_payroll WHERE month = :month AND year = :year")
+                "FROM monthly_payroll WHERE month = :month AND year = :year AND site_id = :siteId")
                 .setParameter("month", month)
                 .setParameter("year", year)
+                .setParameter("siteId", siteId)
                 .getSingleResult();
 
         return new BigDecimal[]{
@@ -119,14 +126,15 @@ public class DashboardRepository {
     /**
      * Returns [activePayrollRows, missingRateRows] for current month readiness.
      */
-    public long[] getPayrollReadiness(int month, int year) {
+    public long[] getPayrollReadiness(int month, int year, Long siteId) {
         Object[] row = (Object[]) em.createNativeQuery(
                 "SELECT COUNT(*) FILTER (WHERE COALESCE(is_active, true) = true), " +
                 "       COUNT(*) FILTER (WHERE COALESCE(is_active, true) = true " +
                 "           AND (rate IS NULL OR rate = 0)) " +
-                "FROM monthly_payroll WHERE month = :month AND year = :year")
+                "FROM monthly_payroll WHERE month = :month AND year = :year AND site_id = :siteId")
                 .setParameter("month", month)
                 .setParameter("year", year)
+                .setParameter("siteId", siteId)
                 .getSingleResult();
 
         return new long[]{
@@ -141,18 +149,20 @@ public class DashboardRepository {
      * Returns month/year -> gross total for up to 6 months in a single query.
      * Replaces the old loop that fired 6 separate queries.
      */
-    public List<Object[]> getPayrollTrends(int fromMonth, int fromYear, int toMonth, int toYear) {
+    public List<Object[]> getPayrollTrends(int fromMonth, int fromYear, int toMonth, int toYear, Long siteId) {
         return em.createNativeQuery(
                 "SELECT month, year, COALESCE(SUM(gross_salary), 0) " +
                 "FROM monthly_payroll " +
                 "WHERE (year > :fromYear OR (year = :fromYear AND month >= :fromMonth)) " +
                 "AND   (year < :toYear  OR (year = :toYear  AND month <= :toMonth)) " +
+                "AND site_id = :siteId " +
                 "GROUP BY year, month " +
                 "ORDER BY year ASC, month ASC")
                 .setParameter("fromYear", fromYear)
                 .setParameter("fromMonth", fromMonth)
                 .setParameter("toYear", toYear)
                 .setParameter("toMonth", toMonth)
+                .setParameter("siteId", siteId)
                 .getResultList();
     }
 

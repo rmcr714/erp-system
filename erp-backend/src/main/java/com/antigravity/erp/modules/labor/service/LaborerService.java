@@ -5,7 +5,7 @@ import java.util.List;
 
 public interface LaborerService {
     List<LaborerDTO> getAllLaborers();
-    List<LaborerDTO> searchLaborers(String fullName, String grNo, String designation, String contactNo, boolean onlyActive);
+    List<LaborerDTO> searchLaborers(String fullName, String grNo, String designation, String contactNo, Long siteId, boolean onlyActive);
     LaborerDTO addLaborer(LaborerDTO laborerDTO);
     LaborerDTO updateLaborer(String grNo, LaborerDTO laborerDTO);
 }

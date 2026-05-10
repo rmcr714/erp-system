@@ -27,6 +27,7 @@ STRICT RULES:
 - For PF: look for YES/NO written, a checkbox, or a tick. Set hasPf to true only if YES is clearly indicated.
 - For contact number: strip any spaces or dashes. Include as-is without country code prefix.
 - Include grNo if a GR No or GR Number field is visible and filled.
+- Include remarks if a remarks/note/comment field is visible and filled.
 
 Return this exact JSON structure (omit any key where the value is not readable):
 {
@@ -44,6 +45,7 @@ Return this exact JSON structure (omit any key where the value is not readable):
   "joinByReference": "string",
   "hasPf": true | false,
   "pfNo": "string",
+  "remarks": "string",
   "permanentAddress": {
     "line": "city/village/street",
     "state": "full Indian state name",

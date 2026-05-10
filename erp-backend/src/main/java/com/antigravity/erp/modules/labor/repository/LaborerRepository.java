@@ -6,20 +6,25 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface LaborerRepository extends JpaRepository<Laborer, String> {
+public interface LaborerRepository extends JpaRepository<Laborer, Long> {
+    boolean existsByGrNoIgnoreCase(String grNo);
+    Optional<Laborer> findByGrNoIgnoreCase(String grNo);
     
     @Query("SELECT l FROM Laborer l WHERE " +
            "(:fullName IS NULL OR :fullName = '' OR LOWER(COALESCE(l.fullName, '')) LIKE LOWER(CONCAT('%', LOWER(:fullName), '%'))) AND " +
            "(:grNo IS NULL OR :grNo = '' OR LOWER(COALESCE(l.grNo, '')) LIKE LOWER(CONCAT('%', LOWER(:grNo), '%'))) AND " +
            "(:designation IS NULL OR :designation = '' OR LOWER(COALESCE(l.designation, '')) LIKE LOWER(CONCAT('%', LOWER(:designation), '%'))) AND " +
            "(:contactNo IS NULL OR :contactNo = '' OR COALESCE(l.contactNo, '') LIKE CONCAT('%', :contactNo, '%')) AND " +
+           "(:siteId IS NULL OR l.currentSiteId = :siteId) AND " +
            "(:onlyActive = false OR l.status = com.antigravity.erp.modules.labor.enums.LaborerStatus.ACTIVE)")
     List<Laborer> findLaborers(
             @Param("fullName") String fullName, 
             @Param("grNo") String grNo, 
             @Param("designation") String designation, 
             @Param("contactNo") String contactNo, 
+            @Param("siteId") Long siteId,
             @Param("onlyActive") boolean onlyActive);
 }

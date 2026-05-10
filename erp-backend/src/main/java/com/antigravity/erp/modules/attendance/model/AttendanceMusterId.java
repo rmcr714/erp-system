@@ -9,7 +9,8 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AttendanceMusterId implements Serializable {
-    private String grNo;
+    private Long workerId;
+    private Long siteId;
     private Integer month;
     private Integer year;
 }

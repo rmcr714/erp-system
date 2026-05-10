@@ -18,11 +18,20 @@ import java.time.LocalDate;
 @Table(name = "daily_attendance_search",
        indexes = {
            @Index(name = "idx_daily_att_date", columnList = "work_date"),
-           @Index(name = "idx_daily_att_gr", columnList = "gr_no")
+           @Index(name = "idx_daily_att_gr", columnList = "gr_no"),
+           @Index(name = "idx_daily_att_worker", columnList = "worker_id"),
+           @Index(name = "idx_daily_att_site", columnList = "site_id")
        })
 public class DailyAttendance {
     @Id
-    @Column(name = "gr_no", nullable = false)
+    @Column(name = "worker_id", nullable = false)
+    private Long workerId;
+
+    @Id
+    @Column(name = "site_id", nullable = false)
+    private Long siteId;
+
+    @Column(name = "gr_no", nullable = false, length = 50)
     private String grNo;
 
     @Id
@@ -41,4 +50,12 @@ public class DailyAttendance {
     private LocalDate workDate;
 
     private Double units; // e.g. 1.0 for full day, 0.5 for half
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "worker_id", insertable = false, updatable = false)
+    private com.antigravity.erp.modules.labor.model.Laborer laborer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "site_id", insertable = false, updatable = false)
+    private com.antigravity.erp.modules.site.model.Site site;
 }

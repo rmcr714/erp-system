@@ -22,6 +22,8 @@ export interface Laborer {
   designation: 'Carpenter' | 'Steel fitter' | 'Block mason' | 'Plaster mason' | 'Unskilled' | 'Other';
   employerName: string;
   siteAddress: string;
+  currentSiteId?: number;
+  currentSiteName?: string;
   permanentAddress: Address;
   contactNo: string;
   dateOfBirth: string;
@@ -36,6 +38,7 @@ export interface Laborer {
   bankDetails: BankDetails;
   status: 'Active' | 'Inactive' | 'On Leave';
   photoUrl?: string;
+  remarks: string;
   createdAt?: string;
   updatedAt?: string;
 }

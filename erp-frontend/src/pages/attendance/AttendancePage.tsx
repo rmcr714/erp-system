@@ -5,7 +5,11 @@ import type { MonthlyMusterRow } from '../../modules/attendance/types';
 import { toast } from 'react-hot-toast';
 import Sidebar from '../../components/common/Sidebar';
 
-const AttendancePage: React.FC = () => {
+interface AttendancePageProps {
+    siteId: number;
+}
+
+const AttendancePage: React.FC<AttendancePageProps> = ({ siteId }) => {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
     const [data, setData] = useState<MonthlyMusterRow[]>([]);
@@ -18,12 +22,12 @@ const AttendancePage: React.FC = () => {
 
     useEffect(() => {
         loadMuster();
-    }, [month, year]);
+    }, [month, year, siteId]);
 
     const loadMuster = async () => {
         setLoading(true);
         try {
-            const muster = await attendanceService.getMonthlyMuster(month, year);
+            const muster = await attendanceService.getMonthlyMuster(month, year, siteId);
             setData(muster);
         } catch (error) {
             toast.error('Failed to load attendance data');
@@ -35,7 +39,7 @@ const AttendancePage: React.FC = () => {
     const handleStartMonth = async () => {
         setStartingMonth(true);
         try {
-            await attendanceService.startMonth(month, year);
+            await attendanceService.startMonth(month, year, siteId);
             toast.success(`Attendance started for ${monthNames[month - 1]}`);
             loadMuster();
         } catch (error) {
@@ -188,6 +192,7 @@ const AttendancePage: React.FC = () => {
                         ref={gridRef}
                         month={month}
                         year={year}
+                        siteId={siteId}
                         initialData={filteredData}
                         isEditMode={isEditMode}
                         onDataChange={(updated) => {

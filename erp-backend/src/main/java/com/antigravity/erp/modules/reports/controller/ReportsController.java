@@ -20,8 +20,8 @@ public class ReportsController {
     private final DashboardService dashboardService;
 
     @GetMapping("/dashboard")
-    public ResponseEntity<DashboardStatsDto> getDashboardStats() {
-        return ResponseEntity.ok(dashboardService.getDashboardStats());
+    public ResponseEntity<DashboardStatsDto> getDashboardStats(@RequestParam(name = "siteId") Long siteId) {
+        return ResponseEntity.ok(dashboardService.getDashboardStats(siteId));
     }
 
     @GetMapping("/analytics/labor-cost")

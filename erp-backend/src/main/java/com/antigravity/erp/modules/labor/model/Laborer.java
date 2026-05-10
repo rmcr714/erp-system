@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.antigravity.erp.modules.labor.enums.LaborerStatus;
+import com.antigravity.erp.modules.site.model.Site;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -17,16 +18,30 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "laborers")
+@Table(name = "laborers",
+       indexes = {
+           @Index(name = "idx_laborers_gr_no", columnList = "gr_no", unique = true)
+       })
 public class Laborer {
     @Id
-    private String grNo; 
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "gr_no", nullable = false, unique = true, length = 50)
+    private String grNo;
     
     // Core Details
     private String fullName;
     private String designation; // Carpenter, Steel fitter, Block mason, Plaster mason, Unskilled, Other
     private String employerName;
     private String siteAddress;
+
+    @Column(name = "current_site_id")
+    private Long currentSiteId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "current_site_id", insertable = false, updatable = false)
+    private Site currentSite;
     
     // Personal Details
     @Embedded
@@ -50,6 +65,10 @@ public class Laborer {
     @Enumerated(EnumType.STRING)
     private LaborerStatus status; // Active, Inactive, On Leave
     private String photoUrl;
+
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "text")
+    private String remarks = "";
 
     // Auditing
     @CreationTimestamp

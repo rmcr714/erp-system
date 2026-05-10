@@ -19,6 +19,7 @@ export interface MonthlyMusterRow {
 
 export interface AttendanceSaveRequest {
     grNo: string;
+    siteId: number;
     month: number;
     year: number;
     dailyUpdates: Record<number, number>;
@@ -26,6 +27,7 @@ export interface AttendanceSaveRequest {
 
 export interface PayrollUpdateRequest {
     grNo: string;
+    siteId: number;
     month: number;
     year: number;
     rate: number;

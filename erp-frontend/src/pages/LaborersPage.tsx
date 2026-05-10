@@ -25,7 +25,11 @@ const INDIAN_DESIGNATIONS = [
   'Other'
 ];
 
-const LaborersPage: React.FC = () => {
+interface LaborersPageProps {
+  siteId: number;
+}
+
+const LaborersPage: React.FC<LaborersPageProps> = ({ siteId }) => {
   const [laborers, setLaborers] = useState<Laborer[]>([]);
   const [searchCriteria, setSearchCriteria] = useState<SearchCriteria>({
     name: '',
@@ -40,7 +44,6 @@ const LaborersPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedLaborer, setSelectedLaborer] = useState<Laborer | null>(null);
   const [editingLaborer, setEditingLaborer] = useState<Laborer | null>(null);
-  const [initialLoad, setInitialLoad] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Pagination State
@@ -52,21 +55,18 @@ const LaborersPage: React.FC = () => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const data = await laborService.getAllLaborers({});
+        const data = await laborService.getAllLaborers({ siteId });
         setLaborers(data);
         setCurrentPage(1); // Reset to page 1 on new data
       } catch (err) {
         console.error("Error fetching laborers:", err);
       } finally {
         setLoading(false);
-        setInitialLoad(false);
       }
     };
 
-    if (initialLoad) {
-      fetchInitialData();
-    }
-  }, [initialLoad]);
+    fetchInitialData();
+  }, [siteId]);
 
   const handleSearchChange = (field: keyof SearchCriteria, value: string | boolean) => {
     setSearchCriteria(prev => ({
@@ -78,7 +78,7 @@ const LaborersPage: React.FC = () => {
   const performSearch = async (criteria: SearchCriteria) => {
     setLoading(true);
     try {
-      const data = await laborService.getAllLaborers(criteria);
+      const data = await laborService.getAllLaborers({ ...criteria, siteId });
       setLaborers(data);
       setCurrentPage(1); // Reset to page 1 on search
     } catch (err) {
@@ -345,6 +345,7 @@ const LaborersPage: React.FC = () => {
 
         <AddLaborerModal 
           isOpen={isAddModalOpen} 
+          siteId={siteId}
           onClose={() => setIsAddModalOpen(false)} 
         />
 
@@ -366,7 +367,7 @@ const LaborersPage: React.FC = () => {
           laborer={editingLaborer}
           onSuccess={async () => {
             // Refresh the laborers list
-            const data = await laborService.getAllLaborers(searchCriteria);
+            const data = await laborService.getAllLaborers({ ...searchCriteria, siteId });
             setLaborers(data);
           }}
         />

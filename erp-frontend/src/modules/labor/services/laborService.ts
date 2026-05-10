@@ -8,6 +8,7 @@ interface SearchCriteria {
   designation?: string;
   idProofNumber?: string;
   contactNo?: string;
+  siteId?: number;
   onlyActive?: boolean;
 }
 
@@ -29,6 +30,7 @@ export const laborService = {
       if (searchCriteria.grNo) params.append('grNo', searchCriteria.grNo);
       if (searchCriteria.designation && searchCriteria.designation !== '*') params.append('designation', searchCriteria.designation);
       if (searchCriteria.contactNo) params.append('contactNo', searchCriteria.contactNo);
+      if (searchCriteria.siteId) params.append('siteId', searchCriteria.siteId.toString());
       if (searchCriteria.onlyActive) params.append('onlyActive', 'true');
       if (searchCriteria.idProofNumber) params.append('idProofNumber', searchCriteria.idProofNumber);
 

@@ -77,6 +77,7 @@ public class MockLaborService {
                 .permanentAddress(address)
                 .contactNo("+91-9876543210")
                 .status(status)
+                .remarks("")
                 .dateOfBirth(LocalDate.of(1990, 3, 5))
                 .dateOfJoining(LocalDate.of(2023, 1, 15))
                 .idProof(Laborer.IdProof.builder().type(idType).idNumber(idNo).build())
@@ -145,6 +146,7 @@ public class MockLaborService {
                         .build())
                 .status(laborer.getStatus())
                 .photoUrl(laborer.getPhotoUrl())
+                .remarks(laborer.getRemarks() != null ? laborer.getRemarks() : "")
                 .createdAt(laborer.getCreatedAt())
                 .updatedAt(laborer.getUpdatedAt())
                 .build();

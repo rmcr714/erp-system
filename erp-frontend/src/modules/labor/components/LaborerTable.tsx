@@ -34,7 +34,7 @@ const LaborerTable: React.FC<LaborerTableProps> = ({ laborers, loading, onViewPr
                 <td className="p-5 text-text-secondary whitespace-nowrap">
                   {worker.designation}
                 </td>
-                <td className="p-5">{worker.siteAddress}</td>
+                <td className="p-5">{worker.currentSiteName || worker.siteAddress || '-'}</td>
                 <td className="p-5">
                   <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter ${
                     worker.status === 'Active' 

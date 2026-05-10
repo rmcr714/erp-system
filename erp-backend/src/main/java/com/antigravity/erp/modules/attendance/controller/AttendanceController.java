@@ -25,16 +25,18 @@ public class AttendanceController {
     @GetMapping("/muster")
     public ResponseEntity<List<MonthlyMusterRowDTO>> getMonthlyMuster(
             @RequestParam(name = "month") Integer month,
-            @RequestParam(name = "year") Integer year) {
+            @RequestParam(name = "year") Integer year,
+            @RequestParam(name = "siteId") Long siteId) {
         System.out.println("Fetching attendance muster for: " + month + "/" + year);
-        return ResponseEntity.ok(attendanceService.getMonthlyMuster(month, year));
+        return ResponseEntity.ok(attendanceService.getMonthlyMuster(month, year, siteId));
     }
 
     @PostMapping("/start-month")
     public ResponseEntity<String> startMonth(
             @RequestParam(name = "month") Integer month,
-            @RequestParam(name = "year") Integer year) {
-        attendanceService.startMonth(month, year);
+            @RequestParam(name = "year") Integer year,
+            @RequestParam(name = "siteId") Long siteId) {
+        attendanceService.startMonth(month, year, siteId);
         return ResponseEntity.ok("Month started successfully");
     }
 
@@ -42,6 +44,7 @@ public class AttendanceController {
     public ResponseEntity<String> saveAttendance(@RequestBody AttendanceSaveRequest request) {
         attendanceService.saveAttendance(
                 request.getGrNo(),
+                request.getSiteId(),
                 request.getMonth(),
                 request.getYear(),
                 request.getDailyUpdates()
@@ -58,10 +61,11 @@ public class AttendanceController {
     @PostMapping("/rate")
     public ResponseEntity<String> updateRate(
             @RequestParam(name = "grNo") String grNo,
+            @RequestParam(name = "siteId") Long siteId,
             @RequestParam(name = "month") Integer month,
             @RequestParam(name = "year") Integer year,
             @RequestParam(name = "rate") java.math.BigDecimal rate) {
-        attendanceService.updateRate(grNo, month, year, rate);
+        attendanceService.updateRate(grNo, siteId, month, year, rate);
         return ResponseEntity.ok("Rate updated successfully");
     }
 
@@ -82,10 +86,11 @@ public class AttendanceController {
             @RequestParam(name = "day", required = false) Integer day,
             @RequestParam(name = "month", required = false) Integer month,
             @RequestParam(name = "year", required = false) Integer year,
+            @RequestParam(name = "siteId") Long siteId,
             @RequestParam(name = "grNo", required = false) String grNo,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(attendanceService.getWorkerPresence(day, month, year, grNo, pageable));
+        return ResponseEntity.ok(attendanceService.getWorkerPresence(day, month, year, siteId, grNo, pageable));
     }
 }

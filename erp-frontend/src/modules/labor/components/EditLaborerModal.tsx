@@ -21,7 +21,7 @@ const INDIAN_STATES = [
 ];
 
 const REQUIRED_FIELDS = [
-  'grNo', 'fullName', 'designation', 'employerName', 'siteAddress',
+  'grNo', 'fullName', 'designation', 'employerName',
   'contactNo',
   'permanentAddress.line', 'permanentAddress.state', 'permanentAddress.pincode',
   'idProof.idNumber',
@@ -34,6 +34,7 @@ const EMPTY_FORM: Partial<Laborer> = {
   designation: 'Unskilled',
   hasPf: false,
   status: 'Active',
+  remarks: '',
   idProof: { type: 'AADHAR', idNumber: '' },
   bankDetails: { bankName: '', branch: '', accountNo: '', ifscCode: '' },
   permanentAddress: { line: '', state: '', pincode: '' }
@@ -49,6 +50,7 @@ const EditLaborerModal: React.FC<EditLaborerModalProps> = ({ isOpen, onClose, la
     if (laborer) {
       setFormData({
         ...laborer,
+        remarks: laborer.remarks || '',
         idProof: laborer.idProof || { type: 'AADHAR', idNumber: '' },
         bankDetails: laborer.bankDetails || { bankName: '', branch: '', accountNo: '', ifscCode: '' },
         permanentAddress: laborer.permanentAddress || { line: '', state: '', pincode: '' }
@@ -201,15 +203,14 @@ const EditLaborerModal: React.FC<EditLaborerModalProps> = ({ isOpen, onClose, la
                 {fieldError('employerName')}
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-text-secondary">Active Project Site <span className="text-red-400">*</span></label>
+                <label className="text-sm font-medium text-text-secondary">Site Detail</label>
                 <input
                   type="text"
                   className={inputClass('siteAddress')}
-                  placeholder="e.g. Ajmera Manhattan"
+                  placeholder="Optional work area / site note"
                   value={getFieldValue('siteAddress')}
                   onChange={(e) => handleInputChange('siteAddress', e.target.value)}
                 />
-                {fieldError('siteAddress')}
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-secondary">Status</label>
@@ -222,6 +223,15 @@ const EditLaborerModal: React.FC<EditLaborerModalProps> = ({ isOpen, onClose, la
                   <option value="On Leave">On Leave</option>
                   <option value="Inactive">Inactive</option>
                 </select>
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-sm font-medium text-text-secondary">Remarks</label>
+                <textarea
+                  className="w-full min-h-24 resize-y bg-white/5 border border-border-subtle p-3 rounded-xl outline-none focus:border-accent-primary transition-all"
+                  placeholder="Any worker-specific note"
+                  value={getFieldValue('remarks')}
+                  onChange={(e) => handleInputChange('remarks', e.target.value)}
+                />
               </div>
             </div>
           </section>

@@ -28,7 +28,11 @@ const recalculateRow = (row: MonthlyMusterRow): MonthlyMusterRow => {
     };
 };
 
-const PayrollPage: React.FC = () => {
+interface PayrollPageProps {
+    siteId: number;
+}
+
+const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
     const [data, setData] = useState<MonthlyMusterRow[]>([]);
@@ -43,7 +47,7 @@ const PayrollPage: React.FC = () => {
         const currentDate = new Date();
         return year < currentDate.getFullYear() || 
                (year === currentDate.getFullYear() && month < currentDate.getMonth() + 1);
-    }, [month, year]);
+    }, [month, year, siteId]);
 
     const isFutureMonth = useMemo(() => {
         const currentDate = new Date();
@@ -68,7 +72,7 @@ const PayrollPage: React.FC = () => {
     const loadPayroll = async () => {
         setLoading(true);
         try {
-            const rows = await attendanceService.getMonthlyMuster(month, year);
+            const rows = await attendanceService.getMonthlyMuster(month, year, siteId);
             setData(rows.map(recalculateRow));
             setDirtyRows({});
             setCurrentPage(1);
@@ -82,7 +86,7 @@ const PayrollPage: React.FC = () => {
     const handleStartMonth = async () => {
         setStartingMonth(true);
         try {
-            await attendanceService.startMonth(month, year);
+            await attendanceService.startMonth(month, year, siteId);
             toast.success(`Payroll started for ${monthNames[month - 1]}`);
             loadPayroll();
         } catch (error) {
@@ -150,6 +154,7 @@ const PayrollPage: React.FC = () => {
             .filter(row => dirtyRows[row.grNo])
             .map(row => ({
                 grNo: row.grNo,
+                siteId,
                 month,
                 year,
                 rate: row.salaryPerDay,

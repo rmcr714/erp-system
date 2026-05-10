@@ -6,6 +6,7 @@ import java.util.Map;
 @Data
 public class AttendanceSaveRequest {
     private String grNo;
+    private Long siteId;
     private Integer month;
     private Integer year;
     private Map<Integer, Double> dailyUpdates; // Day -> Units

@@ -10,7 +10,11 @@ interface WorkerPresence {
     day: number;
 }
 
-const WorkerPresencePage: React.FC = () => {
+interface WorkerPresencePageProps {
+    siteId: number;
+}
+
+const WorkerPresencePage: React.FC<WorkerPresencePageProps> = ({ siteId }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [data, setData] = useState<WorkerPresence[]>([]);
     const [loading, setLoading] = useState(false);
@@ -46,6 +50,7 @@ const WorkerPresencePage: React.FC = () => {
                 day === 0 ? null : day, 
                 month === 0 ? null : month, 
                 year === 0 ? null : year, 
+                siteId,
                 grNo.trim() || undefined,
                 targetPage,
                 size

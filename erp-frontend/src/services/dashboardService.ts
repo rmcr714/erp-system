@@ -40,8 +40,8 @@ export interface TopWorker {
 }
 
 export const dashboardService = {
-    async getStats(): Promise<DashboardStats> {
-        const response = await fetch('/api/reports/dashboard');
+    async getStats(siteId: number): Promise<DashboardStats> {
+        const response = await fetch(`/api/reports/dashboard?siteId=${siteId}`);
         if (!response.ok) throw new Error('Failed to fetch dashboard stats');
         return response.json();
     }

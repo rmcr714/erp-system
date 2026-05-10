@@ -3,14 +3,14 @@ import type { MonthlyMusterRow, AttendanceSaveRequest, PayrollUpdateRequest } fr
 const API_BASE_URL = '/api/attendance';
 
 export const attendanceService = {
-    async getMonthlyMuster(month: number, year: number): Promise<MonthlyMusterRow[]> {
-        const response = await fetch(`${API_BASE_URL}/muster?month=${month}&year=${year}`);
+    async getMonthlyMuster(month: number, year: number, siteId: number): Promise<MonthlyMusterRow[]> {
+        const response = await fetch(`${API_BASE_URL}/muster?month=${month}&year=${year}&siteId=${siteId}`);
         if (!response.ok) throw new Error('Failed to fetch muster');
         return response.json();
     },
 
-    async startMonth(month: number, year: number): Promise<void> {
-        const response = await fetch(`${API_BASE_URL}/start-month?month=${month}&year=${year}`, {
+    async startMonth(month: number, year: number, siteId: number): Promise<void> {
+        const response = await fetch(`${API_BASE_URL}/start-month?month=${month}&year=${year}&siteId=${siteId}`, {
             method: 'POST'
         });
         if (!response.ok) throw new Error('Failed to start month');
@@ -34,8 +34,8 @@ export const attendanceService = {
         if (!response.ok) throw new Error('Failed to save batch attendance');
     },
 
-    async updateRate(grNo: string, month: number, year: number, rate: number): Promise<void> {
-        const response = await fetch(`${API_BASE_URL}/rate?grNo=${grNo}&month=${month}&year=${year}&rate=${rate}`, {
+    async updateRate(grNo: string, siteId: number, month: number, year: number, rate: number): Promise<void> {
+        const response = await fetch(`${API_BASE_URL}/rate?grNo=${grNo}&siteId=${siteId}&month=${month}&year=${year}&rate=${rate}`, {
             method: 'POST'
         });
         if (!response.ok) throw new Error('Failed to update rate');
@@ -68,8 +68,9 @@ export const attendanceService = {
         if (!response.ok) throw new Error('Failed to update payroll batch');
     },
 
-    async getWorkerPresence(day: number | null, month: number | null, year: number | null, grNo?: string, page = 0, size = 10): Promise<any> {
+    async getWorkerPresence(day: number | null, month: number | null, year: number | null, siteId: number, grNo?: string, page = 0, size = 10): Promise<any> {
         let params = new URLSearchParams();
+        params.append('siteId', siteId.toString());
         if (day && day > 0) params.append('day', day.toString());
         if (month && month > 0) params.append('month', month.toString());
         if (year && year > 0) params.append('year', year.toString());

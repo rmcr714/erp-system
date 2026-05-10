@@ -43,7 +43,7 @@ const ViewLaborerModal: React.FC<ViewLaborerModalProps> = ({ laborer, onClose, o
           <div className="grid grid-cols-2 gap-x-8 gap-y-6">
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">Active Site</p>
-              <p className="text-text-primary font-medium">{laborer.siteAddress}</p>
+              <p className="text-text-primary font-medium">{laborer.currentSiteName || laborer.siteAddress || 'Not assigned'}</p>
             </div>
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">Employer</p>
@@ -88,6 +88,13 @@ const ViewLaborerModal: React.FC<ViewLaborerModalProps> = ({ laborer, onClose, o
               <p className="text-[10px] font-bold text-text-secondary uppercase tracking-tight mb-1">PF Status</p>
               <p className="text-xs font-bold">{laborer.hasPf ? `YES (${laborer.pfNo || 'N/A'})` : 'NO'}</p>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">Remarks</p>
+            <p className="min-h-16 rounded-xl border border-border-subtle bg-white/5 p-4 text-sm text-text-primary whitespace-pre-wrap">
+              {laborer.remarks?.trim() || 'No remarks'}
+            </p>
           </div>
 
           <div className="space-y-4">

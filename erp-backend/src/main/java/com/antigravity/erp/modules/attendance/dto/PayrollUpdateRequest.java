@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 @Data
 public class PayrollUpdateRequest {
     private String grNo;
+    private Long siteId;
     private Integer month;
     private Integer year;
     private BigDecimal rate;

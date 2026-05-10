@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 interface AttendanceMasterGridProps {
     month: number;
     year: number;
+    siteId: number;
     initialData: MonthlyMusterRow[];
     isEditMode: boolean;
     onDataChange: (updatedData: MonthlyMusterRow[]) => void;
@@ -80,6 +81,7 @@ const GridInput = ({
 const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMasterGridProps>(({ 
     month, 
     year, 
+    siteId,
     initialData,
     isEditMode,
     onDataChange 
@@ -148,6 +150,7 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
         try {
             const requests = Object.entries(dirtyUpdates).map(([grNo, dailyUpdates]) => ({
                 grNo,
+                siteId,
                 month,
                 year,
                 dailyUpdates

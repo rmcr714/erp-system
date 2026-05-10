@@ -2,6 +2,7 @@ package com.antigravity.erp.modules.reports.service;
 
 import com.antigravity.erp.modules.reports.dto.DashboardStatsDto;
 import com.antigravity.erp.modules.reports.repository.DashboardRepository;
+import com.antigravity.erp.modules.site.service.SiteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import java.util.*;
 public class DashboardService {
 
     private final DashboardRepository dashboardRepository;
+    private final SiteService siteService;
 
     private static final String[] MONTH_NAMES = {
         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -28,13 +30,14 @@ public class DashboardService {
      * Current approach: ~5 lightweight aggregate queries, returns only counts and sums.
      */
     @Transactional(readOnly = true)
-    public DashboardStatsDto getDashboardStats() {
+    public DashboardStatsDto getDashboardStats(Long siteId) {
+        siteService.requireSite(siteId);
         LocalDate today = LocalDate.now();
         int currentMonth = today.getMonthValue();
         int currentYear = today.getYear();
 
         // ── 1. Workforce counts (1 fast aggregated query) ──
-        long[] counts = dashboardRepository.getWorkforceCounts();
+        long[] counts = dashboardRepository.getWorkforceCounts(siteId);
         long total = safeLong(counts, 0);
         long active = safeLong(counts, 1);
         long inactive = safeLong(counts, 2);
@@ -42,25 +45,25 @@ public class DashboardService {
 
         // ── 2. Designation breakdown (1 GROUP BY query) ──
         Map<String, Long> byDesignation = Optional
-                .ofNullable(dashboardRepository.countActiveByDesignation())
+                .ofNullable(dashboardRepository.countActiveByDesignation(siteId))
                 .orElseGet(Collections::emptyMap);
 
         // ── 3. New joinees (1 COUNT query) ──
-        long newJoinees = dashboardRepository.countNewJoinees(currentMonth, currentYear);
+        long newJoinees = dashboardRepository.countNewJoinees(currentMonth, currentYear, siteId);
 
-        Object[] todayAttendance = dashboardRepository.getTodayAttendanceSummary(today);
+        Object[] todayAttendance = dashboardRepository.getTodayAttendanceSummary(today, siteId);
         long todayMarkedCount = safeLong(todayAttendance, 0);
         double todayPresentCount = safeDouble(todayAttendance, 1);
         double todayTotalUnits = safeDouble(todayAttendance, 2);
         long todayPendingCount = Math.max(0, active - todayMarkedCount);
 
         // ── 4. Current month payroll aggregates (1 SUM query) ──
-        BigDecimal[] payrollAgg = dashboardRepository.getPayrollAggregates(currentMonth, currentYear);
+        BigDecimal[] payrollAgg = dashboardRepository.getPayrollAggregates(currentMonth, currentYear, siteId);
         BigDecimal grossPayroll = safeBigDecimal(payrollAgg, 0);
         BigDecimal totalAdvance = safeBigDecimal(payrollAgg, 1);
         BigDecimal netPayroll = safeBigDecimal(payrollAgg, 2);
         BigDecimal totalDebit = safeBigDecimal(payrollAgg, 3);
-        long[] payrollReadiness = dashboardRepository.getPayrollReadiness(currentMonth, currentYear);
+        long[] payrollReadiness = dashboardRepository.getPayrollReadiness(currentMonth, currentYear, siteId);
         long currentMonthPayrollRecords = safeLong(payrollReadiness, 0);
         long missingPayrollRateCount = safeLong(payrollReadiness, 1);
 
@@ -70,7 +73,7 @@ public class DashboardService {
         int fromYear = sixMonthsAgo.getYear();
 
         List<Object[]> trendRows = Optional
-                .ofNullable(dashboardRepository.getPayrollTrends(fromMonth, fromYear, currentMonth, currentYear))
+                .ofNullable(dashboardRepository.getPayrollTrends(fromMonth, fromYear, currentMonth, currentYear, siteId))
                 .orElseGet(Collections::emptyList);
 
         // Build a lookup map of (year*100 + month) -> gross value
