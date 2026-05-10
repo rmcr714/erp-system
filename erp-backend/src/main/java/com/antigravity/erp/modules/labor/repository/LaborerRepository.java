@@ -12,6 +12,9 @@ import java.util.Optional;
 public interface LaborerRepository extends JpaRepository<Laborer, Long> {
     boolean existsByGrNoIgnoreCase(String grNo);
     Optional<Laborer> findByGrNoIgnoreCase(String grNo);
+
+    @Query("SELECT LOWER(l.grNo) FROM Laborer l WHERE LOWER(l.grNo) IN :grNos")
+    java.util.Set<String> findAllExistingGrNos(@Param("grNos") java.util.Collection<String> grNos);
     
     @Query("SELECT l FROM Laborer l WHERE " +
            "(:fullName IS NULL OR :fullName = '' OR LOWER(COALESCE(l.fullName, '')) LIKE LOWER(CONCAT('%', LOWER(:fullName), '%'))) AND " +

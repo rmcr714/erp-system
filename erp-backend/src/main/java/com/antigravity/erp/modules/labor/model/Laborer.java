@@ -66,6 +66,9 @@ public class Laborer {
     private LaborerStatus status; // Active, Inactive, On Leave
     private String photoUrl;
 
+    @Column(name = "salary_per_day")
+    private BigDecimal salaryPerDay;
+
     @Builder.Default
     @Column(nullable = false, columnDefinition = "text")
     private String remarks = "";

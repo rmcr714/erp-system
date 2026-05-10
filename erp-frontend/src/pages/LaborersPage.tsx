@@ -6,6 +6,7 @@ import LaborerTable from '../modules/labor/components/LaborerTable';
 import AddLaborerModal from '../modules/labor/components/AddLaborerModal';
 import ViewLaborerModal from '../modules/labor/components/ViewLaborerModal';
 import EditLaborerModal from '../modules/labor/components/EditLaborerModal';
+import ExcelImportModal from '../modules/labor/components/ExcelImportModal';
 
 interface SearchCriteria {
   name: string;
@@ -42,6 +43,7 @@ const LaborersPage: React.FC<LaborersPageProps> = ({ siteId }) => {
   const [loading, setLoading] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isExcelImportOpen, setIsExcelImportOpen] = useState(false);
   const [selectedLaborer, setSelectedLaborer] = useState<Laborer | null>(null);
   const [editingLaborer, setEditingLaborer] = useState<Laborer | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -165,6 +167,12 @@ const LaborersPage: React.FC<LaborersPageProps> = ({ siteId }) => {
                     className="bg-accent-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-accent-secondary hover:-translate-y-0.5 shadow-lg shadow-accent-primary/20 transition-all duration-200"
                 >
                     + Add Laborer
+                </button>
+                <button
+                    onClick={() => setIsExcelImportOpen(true)}
+                    className="flex items-center gap-2 bg-emerald-600/20 border border-emerald-500/40 text-emerald-400 px-6 py-3 rounded-xl font-semibold hover:bg-emerald-600/40 hover:text-emerald-300 hover:-translate-y-0.5 transition-all duration-200"
+                >
+                    <span>📊</span> Import via Excel
                 </button>
             </div>
         </div>
@@ -347,6 +355,16 @@ const LaborersPage: React.FC<LaborersPageProps> = ({ siteId }) => {
           isOpen={isAddModalOpen} 
           siteId={siteId}
           onClose={() => setIsAddModalOpen(false)} 
+        />
+
+        <ExcelImportModal
+          isOpen={isExcelImportOpen}
+          siteId={siteId}
+          onClose={() => setIsExcelImportOpen(false)}
+          onSuccess={async () => {
+            const data = await laborService.getAllLaborers({ siteId });
+            setLaborers(data);
+          }}
         />
 
         <ViewLaborerModal 
