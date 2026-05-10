@@ -43,6 +43,48 @@ public class SiteService {
         return toDto(siteRepository.save(site));
     }
 
+    @Transactional
+    public SiteDTO updateSite(Long id, SiteDTO dto) {
+        Site existingSite = requireSite(id);
+
+        // Only validate and update fields that are provided
+        if (dto.getSiteCode() != null) {
+            String siteCode = normalize(dto.getSiteCode());
+            if (siteCode.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Site code cannot be empty.");
+            }
+            // Check if site code is taken by another site
+            if (!existingSite.getSiteCode().equalsIgnoreCase(siteCode) &&
+                siteRepository.existsBySiteCodeIgnoreCase(siteCode)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Site code already exists.");
+            }
+            existingSite.setSiteCode(siteCode);
+        }
+
+        if (dto.getName() != null) {
+            if (dto.getName().trim().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Site name cannot be empty.");
+            }
+            existingSite.setName(dto.getName().trim());
+        }
+
+        if (dto.getAddress() != null) {
+            existingSite.setAddress(valueOrEmpty(dto.getAddress()));
+        }
+
+        if (dto.getActive() != null) {
+            existingSite.setActive(dto.getActive());
+        }
+
+        return toDto(siteRepository.save(existingSite));
+    }
+
+    @Transactional
+    public void deleteSite(Long id) {
+        Site site = requireSite(id);
+        siteRepository.delete(site);
+    }
+
     @Transactional(readOnly = true)
     public Site requireSite(Long siteId) {
         if (siteId == null) {

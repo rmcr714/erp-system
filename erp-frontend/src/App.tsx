@@ -6,9 +6,11 @@ import ReportsPage from './pages/reports/ReportsPage';
 import AnalyticsPage from './pages/reports/AnalyticsPage';
 import AttendanceReportPage from './pages/reports/AttendanceReportPage';
 import WorkerPresencePage from './pages/reports/WorkerPresencePage';
+import SitesPage from './pages/SitesPage';
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
-import SiteSelector from './modules/site/SiteSelector';
+import Sidebar from './components/common/Sidebar';
+import SubtleSiteSelector from './modules/site/SubtleSiteSelector';
 import { siteService } from './modules/site/siteService';
 import type { Site } from './modules/site/types';
 
@@ -19,11 +21,36 @@ function App() {
     const stored = localStorage.getItem('selectedSiteId');
     return stored ? Number(stored) : null;
   });
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const loadSites = async () => {
+    try {
+      const data = await siteService.getSites();
+      setSites(data);
+      
+      const currentSiteId = Number(localStorage.getItem('selectedSiteId'));
+      const siteStillExists = data.some(site => site.id === currentSiteId);
+
+      if (!siteStillExists) {
+        if (data.length > 0) {
+          const firstActive = data.find(site => site.active) || data[0];
+          setSelectedSiteId(firstActive.id);
+          localStorage.setItem('selectedSiteId', String(firstActive.id));
+        } else {
+          setSelectedSiteId(null);
+          localStorage.removeItem('selectedSiteId');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load sites', error);
+    }
+  };
 
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1) || 'dashboard';
       setCurrentPage(hash);
+      loadSites();
     };
 
     window.addEventListener('hashchange', handleHashChange);
@@ -32,36 +59,28 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  useEffect(() => {
-    const loadSites = async () => {
-      try {
-        const data = await siteService.getSites();
-        setSites(data);
-        if (!selectedSiteId && data.length > 0) {
-          const firstActive = data.find(site => site.active) || data[0];
-          setSelectedSiteId(firstActive.id);
-          localStorage.setItem('selectedSiteId', String(firstActive.id));
-        }
-      } catch (error) {
-        console.error('Failed to load sites', error);
-      }
-    };
-
-    loadSites();
-  }, []);
-
   const handleSiteSelect = (siteId: number) => {
     setSelectedSiteId(siteId);
     localStorage.setItem('selectedSiteId', String(siteId));
   };
 
   const renderPage = () => {
+    if (currentPage === 'sites') {
+      return <SitesPage />;
+    }
+
     if (!selectedSiteId) {
       return (
         <div className="min-h-screen bg-bg-main text-text-primary flex items-center justify-center p-6">
           <div className="glass-card max-w-md p-8 text-center">
             <h1 className="text-2xl font-black mb-2">Select or create a site</h1>
-            <p className="text-text-secondary">Choose an active project site from the top-right selector before using attendance, payroll, and reports.</p>
+            <p className="text-text-secondary mb-6">Choose an active project site from the top selector or go to Sites to manage your sites.</p>
+            <a 
+              href="#sites" 
+              className="inline-flex items-center justify-center rounded-xl bg-accent-primary text-white font-semibold py-3 px-6 hover:bg-accent-primary/90 transition-colors w-full"
+            >
+              Manage Sites
+            </a>
           </div>
         </div>
       );
@@ -77,10 +96,10 @@ function App() {
       return <PayrollPage siteId={selectedSiteId} />;
     }
     if (currentPage.startsWith('reports/analytics')) {
-      return <AnalyticsPage />;
+      return <AnalyticsPage siteId={selectedSiteId} />;
     }
     if (currentPage.startsWith('reports/attendance')) {
-      return <AttendanceReportPage />;
+      return <AttendanceReportPage siteId={selectedSiteId} />;
     }
     if (currentPage.startsWith('reports/worker-presence')) {
       return <WorkerPresencePage siteId={selectedSiteId} />;
@@ -118,15 +137,23 @@ function App() {
           },
         }}
       />
-      <div key={currentPage} className="animate-page-transition">
-        {renderPage()}
-      </div>
-      <SiteSelector
-        sites={sites}
-        selectedSiteId={selectedSiteId}
-        onSelect={handleSiteSelect}
-        onSiteAdded={(site) => setSites(prev => [...prev, site])}
+      <Sidebar
+        currentPage={currentPage}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
+      <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-sidebar' : 'ml-0'}`}>
+        <div key={currentPage} className="animate-page-transition">
+          {renderPage()}
+        </div>
+      </div>
+      {selectedSiteId && (
+        <SubtleSiteSelector
+          sites={sites}
+          selectedSiteId={selectedSiteId}
+          onSelect={handleSiteSelect}
+        />
+      )}
     </>
   );
 }

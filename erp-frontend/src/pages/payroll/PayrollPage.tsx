@@ -67,7 +67,7 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
 
     useEffect(() => {
         loadPayroll();
-    }, [month, year]);
+    }, [month, year, siteId]);
 
     const loadPayroll = async () => {
         setLoading(true);

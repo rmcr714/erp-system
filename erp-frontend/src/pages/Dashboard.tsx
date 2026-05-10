@@ -121,7 +121,13 @@ const Dashboard: React.FC<DashboardProps> = ({ siteId }) => {
                         <div className="text-center glass-card p-12">
                             <p className="text-4xl mb-4">⚠️</p>
                             <p className="text-text-secondary text-lg">{error || 'No data available'}</p>
-                            <p className="text-text-secondary/60 text-sm mt-2">Make sure the backend is running and the month has been started.</p>
+                            <p className="text-text-secondary/60 text-sm mt-2 mb-6">Please ensure a site has been added and the month has started, or contact your administrator.</p>
+                            <a 
+                                href="#sites" 
+                                className="inline-flex items-center justify-center rounded-xl bg-accent-primary text-white font-semibold py-2.5 px-6 hover:bg-accent-primary/90 transition-colors"
+                            >
+                                Manage Sites
+                            </a>
                         </div>
                     </div>
                 ) : (
@@ -240,7 +246,7 @@ const Dashboard: React.FC<DashboardProps> = ({ siteId }) => {
                                 <h3 className="text-sm font-bold text-text-secondary uppercase tracking-widest mb-4">Workforce Breakdown</h3>
                                 <div className="flex flex-col gap-3">
                                     {Object.entries(stats.laborersByDesignation)
-                                        .sort(([,a], [,b]) => b - a)
+                                        .sort(([, a], [, b]) => b - a)
                                         .map(([desig, count]) => {
                                             const percentage = stats.activeLaborers > 0 ? (count / stats.activeLaborers) * 100 : 0;
                                             const color = DESIGNATION_COLORS[desig] || '#6b7280';

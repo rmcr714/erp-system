@@ -4,7 +4,11 @@ import { type LaborCostData } from '../../modules/reports/types';
 import Sidebar from '../../components/common/Sidebar';
 import LaborCostCharts from '../../modules/reports/components/LaborCostCharts';
 
-const AnalyticsPage: React.FC = () => {
+interface AnalyticsPageProps {
+    siteId: number;
+}
+
+const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ siteId }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [data, setData] = useState<LaborCostData[]>([]);
     const [loading, setLoading] = useState(true);
@@ -18,11 +22,11 @@ const AnalyticsPage: React.FC = () => {
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [siteId]);
 
     const loadData = async () => {
         try {
-            const rawData = await analyticsService.getLaborCostTrends();
+            const rawData = await analyticsService.getLaborCostTrends(siteId);
             setData(rawData);
         } catch (error) {
             console.error("Failed to fetch analytics", error);

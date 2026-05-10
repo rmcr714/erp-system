@@ -25,8 +25,8 @@ public class ReportsController {
     }
 
     @GetMapping("/analytics/labor-cost")
-    public ResponseEntity<List<LaborCostAnalyticsDto>> getLaborCostAnalytics() {
+    public ResponseEntity<List<LaborCostAnalyticsDto>> getLaborCostAnalytics(@RequestParam(name = "siteId") Long siteId) {
         int startYear = java.time.LocalDate.now().getYear() - 5;
-        return ResponseEntity.ok(monthlyPayrollRepository.getLaborCostAnalytics(startYear));
+        return ResponseEntity.ok(monthlyPayrollRepository.getLaborCostAnalytics(siteId, startYear));
     }
 }

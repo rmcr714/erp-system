@@ -8,6 +8,7 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: '📊', href: '#dashboard', match: (p: string) => p === 'dashboard' },
+  { id: 'sites', label: 'Sites', icon: '🏗️', href: '#sites', match: (p: string) => p === 'sites' },
   { id: 'laborers', label: 'Laborers', icon: '👷', href: '#laborers', match: (p: string) => p.includes('laborer') },
   { id: 'attendance', label: 'Attendance', icon: '📅', href: '#attendance', match: (p: string) => p === 'attendance' },
   { id: 'payroll', label: 'Payroll', icon: '💰', href: '#payroll', match: (p: string) => p.startsWith('payroll') },

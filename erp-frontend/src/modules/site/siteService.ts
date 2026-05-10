@@ -23,4 +23,30 @@ export const siteService = {
 
     return response.json();
   },
+
+  async updateSite(id: number, site: Partial<SiteRequest>): Promise<Site> {
+    const response = await fetch(`${API_BASE_URL}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(site),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to update site');
+    }
+
+    return response.json();
+  },
+
+  async deleteSite(id: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to delete site');
+    }
+  },
 };

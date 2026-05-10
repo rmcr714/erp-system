@@ -1,8 +1,8 @@
 import { type MusterRow } from '../types';
 
 export const reportService = {
-    getAttendanceReport: async (month: number, year: number): Promise<MusterRow[]> => {
-        const response = await fetch(`/api/attendance/muster?month=${month}&year=${year}`);
+    getAttendanceReport: async (month: number, year: number, siteId: number): Promise<MusterRow[]> => {
+        const response = await fetch(`/api/attendance/muster?month=${month}&year=${year}&siteId=${siteId}`);
         if (!response.ok) {
             throw new Error('Failed to fetch attendance report');
         }

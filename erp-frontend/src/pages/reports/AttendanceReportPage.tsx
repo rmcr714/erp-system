@@ -4,7 +4,11 @@ import { reportService } from '../../modules/reports/services/reportService';
 import { type MusterRow } from '../../modules/reports/types';
 import AttendanceReportGrid from '../../modules/reports/components/AttendanceReportGrid';
 
-const AttendanceReportPage: React.FC = () => {
+interface AttendanceReportPageProps {
+    siteId: number;
+}
+
+const AttendanceReportPage: React.FC<AttendanceReportPageProps> = ({ siteId }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [data, setData] = useState<MusterRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -21,12 +25,12 @@ const AttendanceReportPage: React.FC = () => {
 
     useEffect(() => {
         fetchReport();
-    }, [month, year]);
+    }, [month, year, siteId]);
 
     const fetchReport = async () => {
         setLoading(true);
         try {
-            const result = await reportService.getAttendanceReport(month, year);
+            const result = await reportService.getAttendanceReport(month, year, siteId);
             setData(result);
         } catch (error) {
             console.error("Failed to fetch report", error);

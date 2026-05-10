@@ -20,10 +20,10 @@ public interface MonthlyPayrollRepository extends JpaRepository<MonthlyPayroll, 
 
     @Query("SELECT new com.antigravity.erp.modules.reports.dto.LaborCostAnalyticsDto(p.month, p.year, l.designation, SUM(p.grossSalary)) " +
            "FROM MonthlyPayroll p JOIN p.laborer l " +
-           "WHERE p.year >= :startYear " +
+           "WHERE p.siteId = :siteId AND p.year >= :startYear " +
            "GROUP BY p.year, p.month, l.designation " +
            "ORDER BY p.year ASC, p.month ASC")
-    List<LaborCostAnalyticsDto> getLaborCostAnalytics(@Param("startYear") Integer startYear);
+    List<LaborCostAnalyticsDto> getLaborCostAnalytics(@Param("siteId") Long siteId, @Param("startYear") Integer startYear);
 
     @Modifying
     @Query("UPDATE MonthlyPayroll p SET p.grNo = :grNo WHERE p.workerId = :workerId")
