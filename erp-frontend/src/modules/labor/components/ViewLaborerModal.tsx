@@ -82,7 +82,7 @@ const ViewLaborerModal: React.FC<ViewLaborerModalProps> = ({ laborer, onClose, o
             </div>
             <div>
               <p className="text-[10px] font-bold text-text-secondary uppercase tracking-tight mb-1">Identity</p>
-              <p className="text-xs font-mono">{laborer.idProof.type}: {laborer.idProof.idNumber}</p>
+              <p className="text-xs font-mono">{laborer.idProof?.type || 'N/A'}: {laborer.idProof?.idNumber || 'N/A'}</p>
             </div>
             <div>
               <p className="text-[10px] font-bold text-text-secondary uppercase tracking-tight mb-1">PF Status</p>
@@ -105,15 +105,15 @@ const ViewLaborerModal: React.FC<ViewLaborerModalProps> = ({ laborer, onClose, o
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
                 <p className="text-text-secondary mb-0.5">Bank</p>
-                <p className="font-medium text-text-primary">{laborer.bankDetails.bankName || 'State Bank of India'}</p>
+                <p className="font-medium text-text-primary">{laborer.bankDetails?.bankName || 'Not provided'}</p>
               </div>
               <div>
                 <p className="text-text-secondary mb-0.5">IFSC</p>
-                <p className="font-mono text-text-primary">{laborer.bankDetails.ifscCode || 'SBIN0001234'}</p>
+                <p className="font-mono text-text-primary">{laborer.bankDetails?.ifscCode || 'N/A'}</p>
               </div>
               <div className="col-span-2">
                 <p className="text-text-secondary mb-0.5">Account Number</p>
-                <p className="font-mono text-text-primary tracking-widest">{laborer.bankDetails.accountNo}</p>
+                <p className="font-mono text-text-primary tracking-widest">{laborer.bankDetails?.accountNo || 'N/A'}</p>
               </div>
             </div>
           </div>

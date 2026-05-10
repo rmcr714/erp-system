@@ -46,7 +46,7 @@ const LaborerTable: React.FC<LaborerTableProps> = ({ laborers, loading, onViewPr
                     {worker.status}
                   </span>
                 </td>
-                <td className="p-5 font-mono text-xs">{worker.idProof.type}: {worker.idProof.idNumber}</td>
+                <td className="p-5 font-mono text-xs">{worker.idProof?.type || 'N/A'}: {worker.idProof?.idNumber || 'N/A'}</td>
                 <td className="p-5 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <button 
