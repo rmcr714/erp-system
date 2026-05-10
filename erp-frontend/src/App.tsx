@@ -23,6 +23,16 @@ function App() {
   });
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // Update Browser Tab Title based on selected site
+  useEffect(() => {
+    const selectedSite = sites.find(s => s.id === selectedSiteId);
+    if (selectedSite) {
+      document.title = `${selectedSite.name} | AD Group ERP`;
+    } else {
+      document.title = 'AD Group ERP';
+    }
+  }, [selectedSiteId, sites]);
+
   const loadSites = async () => {
     try {
       const data = await siteService.getSites();
