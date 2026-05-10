@@ -49,6 +49,12 @@ const AttendanceReportPage: React.FC<AttendanceReportPageProps> = ({ siteId }) =
 
     const totalPages = Math.max(1, Math.ceil(totalElements / pageSize));
 
+    // Derive unique designations from the current page of data for the filter dropdown
+    const designations = useMemo(() => {
+        const set = new Set(data.map(row => (row as any).designation).filter(Boolean));
+        return Array.from(set).sort();
+    }, [data]);
+
     const handleExportAll = async () => {
         try {
             toast.loading('Preparing full report...', { id: 'export' });

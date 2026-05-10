@@ -510,9 +510,15 @@ public class AttendanceService {
             return Page.empty(pageable);
         }
 
+        // Batch-load all laborers in one query to avoid N+1
+        Set<Long> workerIds = attendancePage.getContent().stream()
+                .map(DailyAttendance::getWorkerId).collect(Collectors.toSet());
+        Map<Long, Laborer> laborerMap = laborerRepository.findAllById(workerIds).stream()
+                .collect(Collectors.toMap(Laborer::getId, l -> l));
+
         List<WorkerPresenceDTO> dtos = attendancePage.getContent().stream()
                 .map((DailyAttendance attendance) -> {
-                    Laborer laborer = laborerRepository.findById(attendance.getWorkerId()).orElse(null);
+                    Laborer laborer = laborerMap.get(attendance.getWorkerId());
                     return WorkerPresenceDTO.builder()
                             .grNo(laborer != null ? laborer.getGrNo() : "")
                             .name(laborer != null ? laborer.getFullName() : "Unknown")

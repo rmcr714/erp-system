@@ -1,4 +1,3 @@
-import { type MusterRow } from '../types';
 import type { PaginatedMuster } from '../../attendance/services/attendanceService';
 
 export const reportService = {

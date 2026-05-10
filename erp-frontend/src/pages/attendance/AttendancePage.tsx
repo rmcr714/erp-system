@@ -47,7 +47,7 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ siteId }) => {
         try {
             await attendanceService.startMonth(month, year, siteId);
             toast.success(`Attendance started for ${monthNames[month - 1]}`);
-            loadMuster();
+            loadMuster(0);
         } catch (error) {
             toast.error('Failed to start month');
         } finally {
