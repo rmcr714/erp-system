@@ -54,8 +54,10 @@ public class AttendanceService {
                 )
         );
         
-        // Calculate site-wide totals
-        Object[] totalsData = (Object[]) payrollRepository.getSiteMonthlyTotals(siteId, month, year);
+        // Calculate site-wide totals from the DB
+        Object result = payrollRepository.getSiteMonthlyTotals(siteId, month, year);
+        Object[] totalsData = (result instanceof Object[]) ? (Object[]) result : null;
+
         MonthlyMusterResponse.MonthlyTotals totals = MonthlyMusterResponse.MonthlyTotals.builder()
                 .grossSalary(BigDecimal.ZERO)
                 .totalAdvance(BigDecimal.ZERO)
@@ -65,10 +67,10 @@ public class AttendanceService {
 
         if (totalsData != null && totalsData.length >= 4) {
             totals = MonthlyMusterResponse.MonthlyTotals.builder()
-                    .grossSalary(totalsData[0] != null ? (BigDecimal) totalsData[0] : BigDecimal.ZERO)
-                    .totalAdvance(totalsData[1] != null ? (BigDecimal) totalsData[1] : BigDecimal.ZERO)
-                    .netBalance(totalsData[2] != null ? (BigDecimal) totalsData[2] : BigDecimal.ZERO)
-                    .debitBalance(totalsData[3] != null ? (BigDecimal) totalsData[3] : BigDecimal.ZERO)
+                    .grossSalary(totalsData[0] != null ? new BigDecimal(totalsData[0].toString()) : BigDecimal.ZERO)
+                    .totalAdvance(totalsData[1] != null ? new BigDecimal(totalsData[1].toString()) : BigDecimal.ZERO)
+                    .netBalance(totalsData[2] != null ? new BigDecimal(totalsData[2].toString()) : BigDecimal.ZERO)
+                    .debitBalance(totalsData[3] != null ? new BigDecimal(totalsData[3].toString()) : BigDecimal.ZERO)
                     .build();
         }
 
@@ -373,7 +375,6 @@ public class AttendanceService {
             if (request.getSiteAdvance() != null) payroll.setSiteAdvance(request.getSiteAdvance());
             if (request.getOnlineAdvance() != null) payroll.setOnlineAdvance(request.getOnlineAdvance());
             
-            payroll.setTotalAdvance(valueOrZero(payroll.getSiteAdvance()).add(valueOrZero(payroll.getOnlineAdvance())));
             if (request.getDebitBalance() != null) payroll.setDebitBalance(request.getDebitBalance());
             if (request.getRemarks() != null) payroll.setRemarks(request.getRemarks());
 
@@ -384,11 +385,14 @@ public class AttendanceService {
                     : 0.0;
 
             BigDecimal grossSalary = valueOrZero(payroll.getRate()).multiply(BigDecimal.valueOf(totalUnits));
-            BigDecimal totalAdvance = payroll.getTotalAdvance();
+            BigDecimal siteAdv = valueOrZero(payroll.getSiteAdvance());
+            BigDecimal onlineAdv = valueOrZero(payroll.getOnlineAdvance());
+            BigDecimal totalAdvance = siteAdv.add(onlineAdv);
             BigDecimal debitBalance = valueOrZero(payroll.getDebitBalance());
 
             payroll.setTotalUnits(BigDecimal.valueOf(totalUnits));
             payroll.setGrossSalary(grossSalary);
+            payroll.setTotalAdvance(totalAdvance);
             payroll.setNetBalance(grossSalary.subtract(totalAdvance).subtract(debitBalance));
             
             payrollsToSave.add(payroll);

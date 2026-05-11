@@ -32,5 +32,5 @@ public interface MonthlyPayrollRepository extends JpaRepository<MonthlyPayroll, 
     @Query("SELECT SUM(COALESCE(p.grossSalary, 0)), SUM(COALESCE(p.totalAdvance, 0)), SUM(COALESCE(p.netBalance, 0)), SUM(COALESCE(p.debitBalance, 0)) " +
            "FROM MonthlyPayroll p " +
            "WHERE p.siteId = :siteId AND p.month = :month AND p.year = :year")
-    Object[] getSiteMonthlyTotals(@Param("siteId") Long siteId, @Param("month") Integer month, @Param("year") Integer year);
+    Object getSiteMonthlyTotals(@Param("siteId") Long siteId, @Param("month") Integer month, @Param("year") Integer year);
 }

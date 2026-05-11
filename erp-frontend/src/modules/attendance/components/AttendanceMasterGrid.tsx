@@ -23,11 +23,17 @@ export interface AttendanceMasterGridHandle {
 const GridInput = ({ 
     initialValue, 
     isEditMode, 
-    onChange 
+    grNo,
+    day,
+    onChange,
+    onKeyDown
 }: { 
     initialValue: number; 
     isEditMode: boolean; 
+    grNo: string;
+    day: number;
     onChange: (val: string) => void;
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>, grNo: string, day: number) => void;
 }) => {
     const [localValue, setLocalValue] = useState(initialValue === 0 ? '' : initialValue.toString());
 
@@ -41,7 +47,6 @@ const GridInput = ({
         if (/^[0-9]*\.?[0-9]*$/.test(val)) {
             setLocalValue(val);
             const initialStr = initialValue === 0 ? '' : initialValue.toString();
-            // If the user typed '0' specifically, or changed the value, trigger onChange
             if (val !== initialStr || (val === '0' && initialValue === 0)) {
                 if (val !== '' && !val.endsWith('.')) {
                     onChange(val);
@@ -57,13 +62,14 @@ const GridInput = ({
         if (localValue !== initialStr) {
             const numVal = parseFloat(localValue) || 0;
             const fixed = numVal.toString();
-            setLocalValue(fixed); // Keep the '0' if they typed it
+            setLocalValue(fixed); 
             onChange(fixed);
         }
     };
 
     return (
         <input 
+            id={`input-${grNo}-${day}`}
             type="text"
             value={localValue}
             readOnly={!isEditMode}
@@ -75,9 +81,7 @@ const GridInput = ({
             placeholder="-"
             onChange={handleChange}
             onBlur={handleBlur}
-            onKeyDown={(e) => {
-                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-            }}
+            onKeyDown={(e) => onKeyDown(e, grNo, day)}
         />
     );
 };
@@ -216,6 +220,42 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
         const element = document.getElementById(`section-${desig}`);
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, currentGrNo: string, currentDay: number) => {
+        const rowIdx = paginatedData.findIndex(r => r.grNo === currentGrNo);
+        if (rowIdx === -1) return;
+
+        let targetGrNo = currentGrNo;
+        let targetDay = currentDay;
+
+        switch (e.key) {
+            case 'ArrowUp':
+                if (rowIdx > 0) targetGrNo = paginatedData[rowIdx - 1].grNo;
+                break;
+            case 'ArrowDown':
+            case 'Enter':
+                if (rowIdx < paginatedData.length - 1) targetGrNo = paginatedData[rowIdx + 1].grNo;
+                break;
+            case 'ArrowLeft':
+                if (currentDay > 1) targetDay = currentDay - 1;
+                break;
+            case 'ArrowRight':
+                if (currentDay < daysInMonth) targetDay = currentDay + 1;
+                break;
+            default:
+                return; // Let other keys behave normally
+        }
+
+        if (targetGrNo !== currentGrNo || targetDay !== currentDay) {
+            e.preventDefault();
+            const targetId = `input-${targetGrNo}-${targetDay}`;
+            const targetEl = document.getElementById(targetId);
+            if (targetEl) {
+                (targetEl as HTMLInputElement).focus();
+                (targetEl as HTMLInputElement).select();
+            }
         }
     };
 
@@ -387,7 +427,10 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
                                                             <GridInput 
                                                                 initialValue={val}
                                                                 isEditMode={isEditMode}
+                                                                grNo={row.grNo}
+                                                                day={day}
                                                                 onChange={(newVal) => handleCellChange(row.grNo, day, newVal)}
+                                                                onKeyDown={handleKeyDown}
                                                             />
                                                         </td>
                                                     );

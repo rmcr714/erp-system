@@ -46,9 +46,20 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
     const [dirtyRows, setDirtyRows] = useState<Record<string, true>>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [savedData, setSavedData] = useState<MonthlyMusterRow[]>([]);
     const [startingMonth, setStartingMonth] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // Dynamic totals calculated from current data in state
+    const currentTotals = useMemo(() => {
+        return data.reduce((acc, row) => ({
+            gross: acc.gross + (row.totalSalary || 0),
+            advances: acc.advances + (row.totalAdvance || 0),
+            net: acc.net + (row.closingBalance || 0),
+            debit: acc.debit + (row.debitBalance || 0)
+        }), { gross: 0, advances: 0, net: 0, debit: 0 });
+    }, [data]);
 
     const isPastMonth = useMemo(() => {
         const currentDate = new Date();
@@ -82,6 +93,7 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
         try {
             const response = await attendanceService.getMonthlyMuster(month, year, siteId, page - 1, pageSize);
             setData(response.page.content.map(recalculateRow));
+            setSavedData(response.page.content.map(recalculateRow));
             setTotalElements(response.page.totalElements);
             setMonthlyTotals({
                 gross: response.totals.grossSalary,
@@ -134,6 +146,45 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
         const element = document.getElementById(`section-${designation}`);
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, currentGrNo: string, field: string) => {
+        const rowIdx = paginatedData.findIndex(r => r.grNo === currentGrNo);
+        if (rowIdx === -1) return;
+
+        const fields = ['rate', 'siteAdv', 'onlineAdv', 'debit', 'remark'];
+        const fieldIdx = fields.indexOf(field);
+
+        let targetGrNo = currentGrNo;
+        let targetField = field;
+
+        switch (e.key) {
+            case 'ArrowUp':
+                if (rowIdx > 0) targetGrNo = paginatedData[rowIdx - 1].grNo;
+                break;
+            case 'ArrowDown':
+            case 'Enter':
+                if (rowIdx < paginatedData.length - 1) targetGrNo = paginatedData[rowIdx + 1].grNo;
+                break;
+            case 'ArrowLeft':
+                if (fieldIdx > 0) targetField = fields[fieldIdx - 1];
+                break;
+            case 'ArrowRight':
+                if (fieldIdx < fields.length - 1) targetField = fields[fieldIdx + 1];
+                break;
+            default:
+                return;
+        }
+
+        if (targetGrNo !== currentGrNo || targetField !== field) {
+            e.preventDefault();
+            const targetId = `input-${targetField}-${targetGrNo}`;
+            const targetEl = document.getElementById(targetId);
+            if (targetEl) {
+                (targetEl as HTMLInputElement).focus();
+                (targetEl as HTMLInputElement).select();
+            }
         }
     };
 
@@ -361,6 +412,9 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
                     <div className="w-full">
                         {designations.map(designation => {
                             const rows = groupedData[designation];
+                            const savedRows = savedData.filter(r => r.designation === designation || (!r.designation && designation === 'Other'));
+                            const headerGross = savedRows.reduce((sum, r) => sum + (r.totalSalary || 0), 0);
+                            
                             return (
                                 <div key={designation} id={`section-${designation}`} className="mb-10 w-full overflow-x-auto custom-scrollbar">
                                     <div className="sticky left-0 z-30 bg-slate-900/90 border-y border-white/10 px-5 py-3">
@@ -371,7 +425,7 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
                                             </div>
                                             <div className="text-right pr-6">
                                                 <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{rows.length} Workers</div>
-                                                <div className="text-lg font-black text-emerald-400">{money(rows.reduce((sum, row) => sum + row.totalSalary, 0))}</div>
+                                                <div className="text-lg font-black text-emerald-400">{money(headerGross)}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -390,7 +444,14 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
                                                     <td className="p-3 text-right text-sky-400 font-black border-r border-b border-white/10 w-[100px]">{totalUnits(row)}</td>
                                                     <td className="p-2 text-right border-r border-b border-white/10 w-[120px]">
                                                         {isEditMode ? (
-                                                            <input value={row.salaryPerDay || ''} onChange={(event) => updatePayrollField(row.grNo, 'salaryPerDay', event.target.value)} className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-right text-sky-300 font-bold focus:outline-none focus:ring-1 focus:ring-sky-500" />
+                                                            <input 
+                                                                id={`input-rate-${row.grNo}`}
+                                                                value={row.salaryPerDay || ''} 
+                                                                onChange={(event) => updatePayrollField(row.grNo, 'salaryPerDay', event.target.value)} 
+                                                                onKeyDown={(e) => handleKeyDown(e, row.grNo, 'rate')}
+                                                                onFocus={(e) => e.target.select()}
+                                                                className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-right text-sky-300 font-bold focus:outline-none focus:ring-1 focus:ring-sky-500" 
+                                                            />
                                                         ) : (
                                                             <span className="font-black text-sky-400">{money(row.salaryPerDay)}</span>
                                                         )}
@@ -398,14 +459,28 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
                                                     <td className="p-3 text-right text-emerald-400 font-black border-r border-b border-white/10 w-[130px]">{money(row.totalSalary)}</td>
                                                     <td className="p-2 text-right border-r border-b border-white/10 w-[130px]">
                                                         {isEditMode ? (
-                                                            <input value={row.siteAdvance || ''} onChange={(event) => updatePayrollField(row.grNo, 'siteAdvance', event.target.value)} className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-right text-rose-300 font-bold focus:outline-none focus:ring-1 focus:ring-rose-500" />
+                                                            <input 
+                                                                id={`input-siteAdv-${row.grNo}`}
+                                                                value={row.siteAdvance || ''} 
+                                                                onChange={(event) => updatePayrollField(row.grNo, 'siteAdvance', event.target.value)} 
+                                                                onKeyDown={(e) => handleKeyDown(e, row.grNo, 'siteAdv')}
+                                                                onFocus={(e) => e.target.select()}
+                                                                className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-right text-rose-300 font-bold focus:outline-none focus:ring-1 focus:ring-rose-500" 
+                                                            />
                                                         ) : (
                                                             <span className="font-bold text-rose-400">{money(row.siteAdvance)}</span>
                                                         )}
                                                     </td>
                                                     <td className="p-2 text-right border-r border-b border-white/10 w-[130px]">
                                                         {isEditMode ? (
-                                                            <input value={row.onlineAdvance || ''} onChange={(event) => updatePayrollField(row.grNo, 'onlineAdvance', event.target.value)} className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-right text-amber-300 font-bold focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                                                            <input 
+                                                                id={`input-onlineAdv-${row.grNo}`}
+                                                                value={row.onlineAdvance || ''} 
+                                                                onChange={(event) => updatePayrollField(row.grNo, 'onlineAdvance', event.target.value)} 
+                                                                onKeyDown={(e) => handleKeyDown(e, row.grNo, 'onlineAdv')}
+                                                                onFocus={(e) => e.target.select()}
+                                                                className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-right text-amber-300 font-bold focus:outline-none focus:ring-1 focus:ring-amber-500" 
+                                                            />
                                                         ) : (
                                                             <span className="font-bold text-amber-400">{money(row.onlineAdvance)}</span>
                                                         )}
@@ -413,7 +488,14 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
                                                     <td className="p-3 text-right text-orange-400 font-black border-r border-b border-white/10 w-[130px]">{money(row.totalAdvance)}</td>
                                                     <td className="p-2 text-right border-r border-b border-white/10 w-[130px]">
                                                         {isEditMode ? (
-                                                            <input value={row.debitBalance || ''} onChange={(event) => updatePayrollField(row.grNo, 'debitBalance', event.target.value)} className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-right text-cyan-300 font-bold focus:outline-none focus:ring-1 focus:ring-cyan-500" />
+                                                            <input 
+                                                                id={`input-debit-${row.grNo}`}
+                                                                value={row.debitBalance || ''} 
+                                                                onChange={(event) => updatePayrollField(row.grNo, 'debitBalance', event.target.value)} 
+                                                                onKeyDown={(e) => handleKeyDown(e, row.grNo, 'debit')}
+                                                                onFocus={(e) => e.target.select()}
+                                                                className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-right text-cyan-300 font-bold focus:outline-none focus:ring-1 focus:ring-cyan-500" 
+                                                            />
                                                         ) : (
                                                             <span className="font-black text-cyan-400">{money(row.debitBalance)}</span>
                                                         )}
@@ -422,8 +504,10 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
                                                     <td className="p-2 border-b border-white/10 w-[400px]">
                                                         {isEditMode ? (
                                                             <input 
+                                                                id={`input-remark-${row.grNo}`}
                                                                 value={row.remarks || ''} 
                                                                 onChange={(event) => updatePayrollField(row.grNo, 'remarks', event.target.value)} 
+                                                                onKeyDown={(e) => handleKeyDown(e, row.grNo, 'remark')}
                                                                 placeholder="Add remark..."
                                                                 title={row.remarks || ''}
                                                                 className="w-full bg-white/5 border border-white/10 rounded px-3 py-1.5 text-left text-slate-300 focus:outline-none focus:ring-1 focus:ring-sky-500 placeholder:opacity-30 transition-all hover:bg-white/10" 
