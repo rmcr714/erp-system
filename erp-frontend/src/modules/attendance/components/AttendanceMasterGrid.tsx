@@ -180,7 +180,16 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
     }));
 
     const sortedData = useMemo(() => {
-        return [...data].sort((a, b) => a.grNo.localeCompare(b.grNo, undefined, { numeric: true, sensitivity: 'base' }));
+        return [...data].sort((a, b) => {
+            // Primary sort: Designation
+            const desigA = a.designation || '';
+            const desigB = b.designation || '';
+            const desigSort = desigA.localeCompare(desigB);
+            if (desigSort !== 0) return desigSort;
+            
+            // Secondary sort: GR Number (numeric)
+            return a.grNo.localeCompare(b.grNo, undefined, { numeric: true, sensitivity: 'base' });
+        });
     }, [data]);
 
     const paginatedData = useMemo(() => {

@@ -42,7 +42,17 @@ public class AttendanceService {
     @Transactional(readOnly = true)
     public MonthlyMusterResponse getMonthlyMuster(Integer month, Integer year, Long siteId, Pageable pageable) {
         siteService.requireSite(siteId);
-        Page<AttendanceMuster> musterPage = musterRepository.findBySiteIdAndMonthAndYear(siteId, month, year, pageable);
+        // Enforce consistent sorting: Designation then GR Number
+        Page<AttendanceMuster> musterPage = musterRepository.findBySiteIdAndMonthAndYear(
+                siteId, 
+                month, 
+                year, 
+                org.springframework.data.domain.PageRequest.of(
+                        pageable.getPageNumber(), 
+                        pageable.getPageSize(), 
+                        org.springframework.data.domain.Sort.by("laborer.designation").ascending().and(org.springframework.data.domain.Sort.by("grNo").ascending())
+                )
+        );
         
         // Calculate site-wide totals
         Object[] totalsData = (Object[]) payrollRepository.getSiteMonthlyTotals(siteId, month, year);
@@ -148,16 +158,27 @@ public class AttendanceService {
         Integer prevMonth = month == 1 ? 12 : month - 1;
         Integer prevYear = month == 1 ? year - 1 : year;
 
+        // Batch load previous payrolls to get rates
         Map<Long, MonthlyPayroll> prevPayrolls = payrollRepository.findBySiteIdAndMonthAndYear(siteId, prevMonth, prevYear)
                 .stream().collect(Collectors.toMap(MonthlyPayroll::getWorkerId, p -> p));
 
+        // Batch load current musters and payrolls to avoid duplicates
+        Map<Long, AttendanceMuster> currentMusters = musterRepository.findBySiteIdAndMonthAndYear(siteId, month, year)
+                .stream().collect(Collectors.toMap(AttendanceMuster::getWorkerId, m -> m));
+        
+        Map<Long, MonthlyPayroll> currentPayrolls = payrollRepository.findBySiteIdAndMonthAndYear(siteId, month, year)
+                .stream().collect(Collectors.toMap(MonthlyPayroll::getWorkerId, p -> p));
+
+        List<AttendanceMuster> mustersToSave = new ArrayList<>();
+        List<MonthlyPayroll> payrollsToSave = new ArrayList<>();
+
         for (Laborer laborer : activeLaborers) {
-            String grNo = laborer.getGrNo();
             Long workerId = laborer.getId();
+            String grNo = laborer.getGrNo();
             
             // 1. Ensure Muster exists
-            if (!musterRepository.findByWorkerIdAndSiteIdAndMonthAndYear(workerId, siteId, month, year).isPresent()) {
-                AttendanceMuster muster = AttendanceMuster.builder()
+            if (!currentMusters.containsKey(workerId)) {
+                mustersToSave.add(AttendanceMuster.builder()
                         .workerId(workerId)
                         .siteId(siteId)
                         .grNo(grNo)
@@ -165,22 +186,17 @@ public class AttendanceService {
                         .year(year)
                         .attendanceData(new HashMap<>())
                         .isActive(true)
-                        .build();
-                musterRepository.save(muster);
+                        .build());
             }
 
             // 2. Ensure Payroll exists
-            if (!payrollRepository.findByWorkerIdAndSiteIdAndMonthAndYear(workerId, siteId, month, year).isPresent()) {
+            if (!currentPayrolls.containsKey(workerId)) {
                 MonthlyPayroll prevPayroll = prevPayrolls.get(workerId);
-                BigDecimal rate = BigDecimal.ZERO;
-                
-                if (prevPayroll != null && prevPayroll.getRate() != null) {
-                    rate = prevPayroll.getRate();
-                } else if (laborer.getSalaryPerDay() != null) {
-                    rate = laborer.getSalaryPerDay();
-                }
+                BigDecimal rate = (prevPayroll != null && prevPayroll.getRate() != null) 
+                                 ? prevPayroll.getRate() 
+                                 : (laborer.getSalaryPerDay() != null ? laborer.getSalaryPerDay() : BigDecimal.ZERO);
 
-                MonthlyPayroll payroll = MonthlyPayroll.builder()
+                payrollsToSave.add(MonthlyPayroll.builder()
                         .workerId(workerId)
                         .siteId(siteId)
                         .grNo(grNo)
@@ -192,271 +208,194 @@ public class AttendanceService {
                         .onlineAdvance(BigDecimal.ZERO)
                         .totalAdvance(BigDecimal.ZERO)
                         .remarks("")
-                        .build();
-                payrollRepository.save(payroll);
+                        .build());
             }
         }
+        
+        if (!mustersToSave.isEmpty()) musterRepository.saveAll(mustersToSave);
+        if (!payrollsToSave.isEmpty()) payrollRepository.saveAll(payrollsToSave);
     }
 
     @Transactional
     public void saveAttendance(String grNo, Long siteId, Integer month, Integer year, Map<Integer, Double> dailyUpdates) {
-        siteService.requireSite(siteId);
-        Map<String, Laborer> laborerMap = laborerRepository.findByCurrentSiteIdAndStatusIn(
-                    siteId, 
-                    Arrays.asList(LaborerStatus.ACTIVE, LaborerStatus.ON_LEAVE)
-                ).stream()
-                .collect(Collectors.toMap(laborer -> normalizeGrNo(laborer.getGrNo()), laborer -> laborer));
-        saveAttendance(grNo, siteId, month, year, dailyUpdates, laborerMap);
+        saveBatchAttendance(Collections.singletonList(AttendanceSaveRequest.builder()
+                .grNo(grNo).siteId(siteId).month(month).year(year).dailyUpdates(dailyUpdates).build()));
     }
 
     @Transactional
     public void saveBatchAttendance(List<AttendanceSaveRequest> requests) {
-        if (requests == null || requests.isEmpty()) {
-            return;
-        }
+        if (requests == null || requests.isEmpty()) return;
+        
         Long siteId = requests.get(0).getSiteId();
+        Integer month = requests.get(0).getMonth();
+        Integer year = requests.get(0).getYear();
         siteService.requireSite(siteId);
+
+        // 1. Batch Load everything
         Map<String, Laborer> laborerMap = laborerRepository.findByCurrentSiteIdAndStatusIn(
-                    siteId, 
-                    Arrays.asList(LaborerStatus.ACTIVE, LaborerStatus.ON_LEAVE)
-                ).stream()
-                .collect(Collectors.toMap(laborer -> normalizeGrNo(laborer.getGrNo()), laborer -> laborer));
+                siteId, Arrays.asList(LaborerStatus.ACTIVE, LaborerStatus.ON_LEAVE)
+        ).stream().collect(Collectors.toMap(l -> normalizeGrNo(l.getGrNo()), l -> l, (a, b) -> a));
 
+        Map<Long, AttendanceMuster> musterMap = musterRepository.findBySiteIdAndMonthAndYear(siteId, month, year)
+                .stream().collect(Collectors.toMap(AttendanceMuster::getWorkerId, m -> m));
+
+        Map<String, DailyAttendance> dailyMap = dailyRepository.findBySiteIdAndYearAndMonth(siteId, year, month)
+                .stream().collect(Collectors.toMap(d -> d.getWorkerId() + "_" + d.getDay(), d -> d));
+
+        Map<Long, MonthlyPayroll> payrollMap = payrollRepository.findBySiteIdAndMonthAndYear(siteId, month, year)
+                .stream().collect(Collectors.toMap(MonthlyPayroll::getWorkerId, p -> p));
+
+        List<AttendanceMuster> mustersToSave = new ArrayList<>();
+        List<DailyAttendance> dailyToSave = new ArrayList<>();
+        List<MonthlyPayroll> payrollsToSave = new ArrayList<>();
+
+        // 2. Process in memory
         for (AttendanceSaveRequest request : requests) {
-            saveAttendance(
-                    request.getGrNo(),
-                    request.getSiteId(),
-                    request.getMonth(),
-                    request.getYear(),
-                    request.getDailyUpdates(),
-                    laborerMap
-            );
-        }
-    }
-
-    private void saveAttendance(String grNo, Long siteId, Integer month, Integer year, Map<Integer, Double> dailyUpdates,
-                                Map<String, Laborer> laborerMap) {
-        try {
-            Laborer laborer = laborerMap.get(normalizeGrNo(grNo));
-            if (laborer == null) {
-                laborer = laborerRepository.findByGrNoIgnoreCase(normalizeGrNo(grNo))
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Laborer not found"));
-            }
+            Laborer laborer = laborerMap.get(normalizeGrNo(request.getGrNo()));
+            if (laborer == null) continue;
+            
             Long workerId = laborer.getId();
-            AttendanceMuster muster = musterRepository.findByWorkerIdAndSiteIdAndMonthAndYear(workerId, siteId, month, year)
-                    .orElse(AttendanceMuster.builder()
-                            .workerId(workerId)
-                            .siteId(siteId)
-                            .grNo(laborer.getGrNo())
-                            .month(month)
-                            .year(year)
-                            .attendanceData(new HashMap<>())
-                            .build());
-
-            Map<Integer, Double> currentData = muster.getAttendanceData();
-            if (currentData == null) currentData = new HashMap<>();
             
-            Map<Integer, Double> updates = dailyUpdates != null ? dailyUpdates : new HashMap<>();
-            for (Map.Entry<Integer, Double> entry : updates.entrySet()) {
-                Integer day = entry.getKey();
-                Double units = entry.getValue();
-                currentData.put(day, units);
-                
-                updateDailyAttendance(laborer, siteId, year, month, day, units);
+            // Update Muster
+            AttendanceMuster muster = musterMap.get(workerId);
+            if (muster == null) {
+                muster = AttendanceMuster.builder()
+                        .workerId(workerId).siteId(siteId).grNo(laborer.getGrNo())
+                        .month(month).year(year).attendanceData(new HashMap<>()).build();
+                musterMap.put(workerId, muster);
             }
             
-            muster.setAttendanceData(currentData);
-            muster.setGrNo(laborer.getGrNo());
-            musterRepository.save(muster);
-
-            // Sync to Monthly Payroll
-            syncMonthlyPayroll(workerId, siteId, month, year);
+            Map<Integer, Double> attendanceData = muster.getAttendanceData();
+            if (attendanceData == null) attendanceData = new HashMap<>();
             
-        } catch (Exception e) {
-            System.err.println("Critical failure during Attendance Sync: " + e.getMessage());
-            throw e; 
+            if (request.getDailyUpdates() != null) {
+                for (Map.Entry<Integer, Double> entry : request.getDailyUpdates().entrySet()) {
+                    Integer day = entry.getKey();
+                    Double units = entry.getValue();
+                    attendanceData.put(day, units);
+                    
+                    // Update Daily
+                    String dailyKey = workerId + "_" + day;
+                    DailyAttendance daily = dailyMap.get(dailyKey);
+                    if (daily == null) {
+                        daily = DailyAttendance.builder()
+                                .workerId(workerId).siteId(siteId).grNo(laborer.getGrNo())
+                                .name(laborer.getFullName()).designation(laborer.getDesignation())
+                                .year(year).month(month).day(day)
+                                .workDate(LocalDate.of(year, month, day)).build();
+                        dailyMap.put(dailyKey, daily);
+                    }
+                    daily.setUnits(units);
+                    if (!dailyToSave.contains(daily)) dailyToSave.add(daily);
+                }
+            }
+            muster.setAttendanceData(attendanceData);
+            if (!mustersToSave.contains(muster)) mustersToSave.add(muster);
+
+            // Update Payroll (In-memory sync)
+            MonthlyPayroll payroll = payrollMap.get(workerId);
+            if (payroll == null) {
+                payroll = MonthlyPayroll.builder()
+                        .workerId(workerId).siteId(siteId).grNo(laborer.getGrNo())
+                        .month(month).year(year).rate(laborer.getSalaryPerDay() != null ? laborer.getSalaryPerDay() : BigDecimal.ZERO)
+                        .siteAdvance(BigDecimal.ZERO).onlineAdvance(BigDecimal.ZERO).totalAdvance(BigDecimal.ZERO).build();
+                payrollMap.put(workerId, payroll);
+            }
+            
+            double totalUnits = attendanceData.values().stream().filter(Objects::nonNull).mapToDouble(Double::doubleValue).sum();
+            BigDecimal grossSalary = (payroll.getRate() != null) ? payroll.getRate().multiply(BigDecimal.valueOf(totalUnits)) : BigDecimal.ZERO;
+            BigDecimal totalAdv = valueOrZero(payroll.getSiteAdvance()).add(valueOrZero(payroll.getOnlineAdvance()));
+            BigDecimal debit = valueOrZero(payroll.getDebitBalance());
+            
+            payroll.setTotalUnits(BigDecimal.valueOf(totalUnits));
+            payroll.setGrossSalary(grossSalary);
+            payroll.setTotalAdvance(totalAdv);
+            payroll.setNetBalance(grossSalary.subtract(totalAdv).subtract(debit));
+            
+            if (!payrollsToSave.contains(payroll)) payrollsToSave.add(payroll);
         }
+
+        // 3. Batch Save
+        if (!mustersToSave.isEmpty()) musterRepository.saveAll(mustersToSave);
+        if (!dailyToSave.isEmpty()) dailyRepository.saveAll(dailyToSave);
+        if (!payrollsToSave.isEmpty()) payrollRepository.saveAll(payrollsToSave);
     }
 
     @Transactional
     public void updateRate(String grNo, Long siteId, Integer month, Integer year, BigDecimal newRate) {
-        siteService.requireSite(siteId);
-        Laborer laborer = findLaborerByGrNo(grNo);
-        MonthlyPayroll payroll = payrollRepository.findByWorkerIdAndSiteIdAndMonthAndYear(laborer.getId(), siteId, month, year)
-                .orElse(MonthlyPayroll.builder()
-                        .workerId(laborer.getId())
-                        .siteId(siteId)
-                        .grNo(laborer.getGrNo())
-                        .month(month)
-                        .year(year)
-                        .siteAdvance(BigDecimal.ZERO)
-                        .onlineAdvance(BigDecimal.ZERO)
-                        .totalAdvance(BigDecimal.ZERO)
-                        .build());
-        payroll.setRate(newRate);
-        payroll.setGrNo(laborer.getGrNo());
-        payrollRepository.save(payroll);
-        
-        // Re-sync to update totals based on new rate
-        syncMonthlyPayroll(laborer.getId(), siteId, month, year);
+        updatePayroll(PayrollUpdateRequest.builder()
+                .grNo(grNo).siteId(siteId).month(month).year(year).rate(newRate).build());
     }
 
     @Transactional
     public void updatePayroll(PayrollUpdateRequest request) {
-        MonthlyPayroll payroll = getOrCreatePayroll(
-                request.getGrNo(),
-                request.getSiteId(),
-                request.getMonth(),
-                request.getYear()
-        );
-
-        payroll.setRate(valueOrZero(request.getRate()));
-        payroll.setGrNo(findLaborerById(payroll.getWorkerId()).getGrNo());
-        payroll.setSiteAdvance(valueOrZero(request.getSiteAdvance()));
-        payroll.setOnlineAdvance(valueOrZero(request.getOnlineAdvance()));
-        payroll.setTotalAdvance(valueOrZero(request.getSiteAdvance()).add(valueOrZero(request.getOnlineAdvance())));
-        payroll.setDebitBalance(valueOrZero(request.getDebitBalance()));
-        payroll.setRemarks(request.getRemarks() != null ? request.getRemarks() : "");
-        payrollRepository.save(payroll);
-
-        recalculatePayrollTotals(payroll.getWorkerId(), payroll.getSiteId(), request.getMonth(), request.getYear());
+        updatePayrollBatch(Collections.singletonList(request));
     }
 
     @Transactional
     public void updatePayrollBatch(List<PayrollUpdateRequest> requests) {
-        for (PayrollUpdateRequest request : requests) {
-            MonthlyPayroll payroll = getOrCreatePayroll(
-                    request.getGrNo(),
-                    request.getSiteId(),
-                    request.getMonth(),
-                    request.getYear()
-            );
-
-            payroll.setRate(valueOrZero(request.getRate()));
-            payroll.setGrNo(findLaborerById(payroll.getWorkerId()).getGrNo());
-            payroll.setSiteAdvance(valueOrZero(request.getSiteAdvance()));
-            payroll.setOnlineAdvance(valueOrZero(request.getOnlineAdvance()));
-            payroll.setTotalAdvance(valueOrZero(request.getSiteAdvance()).add(valueOrZero(request.getOnlineAdvance())));
-            payroll.setDebitBalance(valueOrZero(request.getDebitBalance()));
-            payroll.setRemarks(request.getRemarks() != null ? request.getRemarks() : "");
-            payrollRepository.save(payroll);
-
-            recalculatePayrollTotals(payroll.getWorkerId(), payroll.getSiteId(), request.getMonth(), request.getYear());
-        }
-    }
-
-    private void recalculatePayrollTotals(Long workerId, Long siteId, Integer month, Integer year) {
-        AttendanceMuster muster = musterRepository.findByWorkerIdAndSiteIdAndMonthAndYear(workerId, siteId, month, year).orElse(null);
-        MonthlyPayroll payroll = getOrCreatePayroll(workerId, siteId, month, year);
-
-        Map<Integer, Double> attendanceData = (muster != null && muster.getAttendanceData() != null) 
-                ? muster.getAttendanceData() 
-                : new HashMap<>();
-        double totalUnits = attendanceData.values().stream()
-                .filter(Objects::nonNull)
-                .mapToDouble(Double::doubleValue)
-                .sum();
-
-        BigDecimal grossSalary = payroll.getRate() != null
-                ? payroll.getRate().multiply(BigDecimal.valueOf(totalUnits))
-                : BigDecimal.ZERO;
-        BigDecimal totalAdvance = valueOrZero(payroll.getSiteAdvance()).add(valueOrZero(payroll.getOnlineAdvance()));
-        BigDecimal debitBalance = valueOrZero(payroll.getDebitBalance());
-
-        payroll.setTotalUnits(BigDecimal.valueOf(totalUnits));
-        payroll.setGrNo(findLaborerById(workerId).getGrNo());
-        payroll.setGrossSalary(grossSalary);
-        payroll.setTotalAdvance(totalAdvance);
-        payroll.setNetBalance(grossSalary.subtract(totalAdvance).subtract(debitBalance));
-        payroll.setDebitBalance(debitBalance);
-        payrollRepository.save(payroll);
-    }
-
-    private void syncMonthlyPayroll(Long workerId, Long siteId, Integer month, Integer year) {
-        AttendanceMuster muster = musterRepository.findByWorkerIdAndSiteIdAndMonthAndYear(workerId, siteId, month, year).orElse(null);
-        MonthlyPayroll payroll = payrollRepository.findByWorkerIdAndSiteIdAndMonthAndYear(workerId, siteId, month, year)
-                .orElse(MonthlyPayroll.builder()
-                        .workerId(workerId)
-                        .siteId(siteId)
-                        .grNo(findLaborerById(workerId).getGrNo())
-                        .month(month)
-                        .year(year)
-                        .siteAdvance(BigDecimal.ZERO)
-                        .onlineAdvance(BigDecimal.ZERO)
-                        .totalAdvance(BigDecimal.ZERO)
-                        .build());
-
-        Map<Integer, Double> attendanceData = (muster != null && muster.getAttendanceData() != null) 
-                ? muster.getAttendanceData() 
-                : new HashMap<>();
-        double totalUnits = attendanceData.values().stream()
-                .filter(Objects::nonNull)
-                .mapToDouble(Double::doubleValue)
-                .sum();
+        if (requests == null || requests.isEmpty()) return;
         
-        BigDecimal grossSalary = payroll.getRate() != null 
-                ? payroll.getRate().multiply(BigDecimal.valueOf(totalUnits)) 
-                : BigDecimal.ZERO;
-
-        BigDecimal siteAdv = payroll.getSiteAdvance() != null ? payroll.getSiteAdvance() : BigDecimal.ZERO;
-        BigDecimal onlineAdv = payroll.getOnlineAdvance() != null ? payroll.getOnlineAdvance() : BigDecimal.ZERO;
-        BigDecimal totalAdv = siteAdv.add(onlineAdv);
-
-        BigDecimal debitBalance = payroll.getDebitBalance() != null ? payroll.getDebitBalance() : BigDecimal.ZERO;
-        BigDecimal netBalance = grossSalary.subtract(totalAdv).subtract(debitBalance);
-
-        payroll.setTotalUnits(BigDecimal.valueOf(totalUnits));
-        payroll.setGrNo(findLaborerById(workerId).getGrNo());
-        payroll.setGrossSalary(grossSalary);
-        payroll.setSiteAdvance(siteAdv);
-        payroll.setOnlineAdvance(onlineAdv);
-        payroll.setTotalAdvance(totalAdv);
-        payroll.setNetBalance(netBalance);
-        payroll.setDebitBalance(debitBalance);
-        
-        payrollRepository.save(payroll);
-    }
-
-    private void updateDailyAttendance(Laborer laborer, Long siteId, Integer year, Integer month, Integer day, Double units) {
-        DailyAttendance daily = dailyRepository.findByWorkerIdAndSiteIdAndYearAndMonthAndDay(laborer.getId(), siteId, year, month, day)
-                .orElse(DailyAttendance.builder()
-                        .workerId(laborer.getId())
-                        .siteId(siteId)
-                        .grNo(laborer.getGrNo())
-                        .name(laborer.getFullName())
-                        .designation(laborer.getDesignation())
-                        .year(year)
-                        .month(month)
-                        .day(day)
-                        .workDate(LocalDate.of(year, month, day))
-                        .build());
-
-        daily.setUnits(units);
-        daily.setGrNo(laborer.getGrNo());
-        daily.setName(laborer.getFullName());
-        daily.setDesignation(laborer.getDesignation());
-        
-        dailyRepository.save(daily);
-    }
-
-    private MonthlyPayroll getOrCreatePayroll(String grNo, Long siteId, Integer month, Integer year) {
+        Long siteId = requests.get(0).getSiteId();
+        Integer month = requests.get(0).getMonth();
+        Integer year = requests.get(0).getYear();
         siteService.requireSite(siteId);
-        Laborer laborer = findLaborerByGrNo(grNo);
-        return getOrCreatePayroll(laborer.getId(), siteId, month, year);
-    }
 
-    private MonthlyPayroll getOrCreatePayroll(Long workerId, Long siteId, Integer month, Integer year) {
-        return payrollRepository.findByWorkerIdAndSiteIdAndMonthAndYear(workerId, siteId, month, year)
-                .orElse(MonthlyPayroll.builder()
-                        .workerId(workerId)
-                        .siteId(siteId)
-                        .grNo(findLaborerById(workerId).getGrNo())
-                        .month(month)
-                        .year(year)
-                        .siteAdvance(BigDecimal.ZERO)
-                        .onlineAdvance(BigDecimal.ZERO)
-                        .totalAdvance(BigDecimal.ZERO)
-                        .build());
+        // 1. Batch Load
+        Map<Long, AttendanceMuster> musterMap = musterRepository.findBySiteIdAndMonthAndYear(siteId, month, year)
+                .stream().collect(Collectors.toMap(AttendanceMuster::getWorkerId, m -> m));
+
+        Map<Long, MonthlyPayroll> payrollMap = payrollRepository.findBySiteIdAndMonthAndYear(siteId, month, year)
+                .stream().collect(Collectors.toMap(MonthlyPayroll::getWorkerId, p -> p));
+        
+        Map<String, Laborer> laborerMap = laborerRepository.findByCurrentSiteIdAndStatusIn(
+                siteId, Arrays.asList(LaborerStatus.ACTIVE, LaborerStatus.ON_LEAVE)
+        ).stream().collect(Collectors.toMap(l -> normalizeGrNo(l.getGrNo()), l -> l, (a, b) -> a));
+
+        List<MonthlyPayroll> payrollsToSave = new ArrayList<>();
+
+        // 2. Process
+        for (PayrollUpdateRequest request : requests) {
+            Laborer laborer = laborerMap.get(normalizeGrNo(request.getGrNo()));
+            if (laborer == null) continue;
+            Long workerId = laborer.getId();
+
+            MonthlyPayroll payroll = payrollMap.get(workerId);
+            if (payroll == null) {
+                payroll = MonthlyPayroll.builder()
+                        .workerId(workerId).siteId(siteId).grNo(laborer.getGrNo())
+                        .month(month).year(year).build();
+                payrollMap.put(workerId, payroll);
+            }
+
+            if (request.getRate() != null) payroll.setRate(request.getRate());
+            payroll.setGrNo(laborer.getGrNo());
+            if (request.getSiteAdvance() != null) payroll.setSiteAdvance(request.getSiteAdvance());
+            if (request.getOnlineAdvance() != null) payroll.setOnlineAdvance(request.getOnlineAdvance());
+            
+            payroll.setTotalAdvance(valueOrZero(payroll.getSiteAdvance()).add(valueOrZero(payroll.getOnlineAdvance())));
+            if (request.getDebitBalance() != null) payroll.setDebitBalance(request.getDebitBalance());
+            if (request.getRemarks() != null) payroll.setRemarks(request.getRemarks());
+
+            // Recalculate Totals (In-memory)
+            AttendanceMuster muster = musterMap.get(workerId);
+            double totalUnits = (muster != null && muster.getAttendanceData() != null)
+                    ? muster.getAttendanceData().values().stream().filter(Objects::nonNull).mapToDouble(Double::doubleValue).sum()
+                    : 0.0;
+
+            BigDecimal grossSalary = valueOrZero(payroll.getRate()).multiply(BigDecimal.valueOf(totalUnits));
+            BigDecimal totalAdvance = payroll.getTotalAdvance();
+            BigDecimal debitBalance = valueOrZero(payroll.getDebitBalance());
+
+            payroll.setTotalUnits(BigDecimal.valueOf(totalUnits));
+            payroll.setGrossSalary(grossSalary);
+            payroll.setNetBalance(grossSalary.subtract(totalAdvance).subtract(debitBalance));
+            
+            payrollsToSave.add(payroll);
+        }
+
+        // 3. Save All
+        if (!payrollsToSave.isEmpty()) payrollRepository.saveAll(payrollsToSave);
     }
 
     private BigDecimal valueOrZero(BigDecimal value) {
@@ -476,7 +415,7 @@ public class AttendanceService {
     }
 
     private String normalizeGrNo(String grNo) {
-        return grNo != null ? grNo.trim().toUpperCase() : "";
+        return grNo != null ? grNo.replaceAll("\\s+", "").toUpperCase() : "";
     }
 
     public Page<WorkerPresenceDTO> getWorkerPresence(Integer day, Integer month, Integer year, Long siteId, String grNo, Pageable pageable) {

@@ -119,7 +119,7 @@ public class ExcelImportService {
                     if (isRowBlank(row)) continue;
                     String g = lookup(row, tempColIndex, "gr no", "grno");
                     if (g != null && !g.equalsIgnoreCase(NOT_AVAILABLE)) {
-                        grNosInFile.add(g.trim().toLowerCase());
+                        grNosInFile.add(g.replaceAll("\\s+", "").toLowerCase());
                     }
                 }
             }
@@ -151,7 +151,7 @@ public class ExcelImportService {
                     continue;
                 }
 
-                grNo = grNo.trim().toUpperCase();
+                grNo = grNo.replaceAll("\\s+", "").toUpperCase();
 
                 // Check DB duplicate using our pre-fetched set (Optimized!)
                 if (existingInDb.contains(grNo.toLowerCase())) {

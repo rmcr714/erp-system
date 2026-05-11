@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -50,6 +52,59 @@ public class LaborerServiceImpl implements LaborerService {
             boolean onlyActive, Pageable pageable) {
         return laborerRepository.findLaborers(fullName, grNo, designation, contactNo, siteId, onlyActive, pageable)
                 .map(this::mapToDTO);
+    }
+
+    @Override
+    @Transactional
+    public List<LaborerDTO> batchAddLaborers(List<LaborerDTO> dtos) {
+        if (dtos == null || dtos.isEmpty()) return new ArrayList<>();
+
+        // 1. Batch Duplicate Check
+        List<String> grNos = dtos.stream().map(d -> normalizeGrNo(d.getGrNo())).collect(Collectors.toList());
+        java.util.Set<String> existingGrNos = laborerRepository.findAllExistingGrNos(grNos);
+        
+        List<LaborerDTO> validDtos = dtos.stream()
+                .filter(d -> !existingGrNos.contains(normalizeGrNo(d.getGrNo()).toLowerCase()))
+                .collect(Collectors.toList());
+
+        if (validDtos.isEmpty()) return new ArrayList<>();
+
+        // 2. Batch Save Laborers
+        List<Laborer> laborers = validDtos.stream().map(this::mapToEntity).collect(Collectors.toList());
+        List<Laborer> savedLaborers = laborerRepository.saveAll(laborers);
+
+        // 3. Batch Attendance/Payroll Initialization
+        Long siteId = validDtos.get(0).getCurrentSiteId();
+        if (siteId != null) {
+            LocalDate now = LocalDate.now();
+            int currentMonth = now.getMonthValue();
+            int currentYear = now.getYear();
+
+            boolean isMonthStarted = !attendanceMusterRepository.findBySiteIdAndMonthAndYear(siteId, currentMonth, currentYear).isEmpty();
+
+            if (isMonthStarted) {
+                List<AttendanceMuster> musters = new ArrayList<>();
+                List<MonthlyPayroll> payrolls = new ArrayList<>();
+
+                for (Laborer laborer : savedLaborers) {
+                    if (laborer.getStatus() == com.antigravity.erp.modules.labor.enums.LaborerStatus.ACTIVE) {
+                        musters.add(AttendanceMuster.builder()
+                                .workerId(laborer.getId()).siteId(siteId).grNo(laborer.getGrNo())
+                                .month(currentMonth).year(currentYear).attendanceData(new java.util.HashMap<>()).isActive(true).build());
+                        
+                        payrolls.add(MonthlyPayroll.builder()
+                                .workerId(laborer.getId()).siteId(siteId).grNo(laborer.getGrNo())
+                                .month(currentMonth).year(currentYear).rate(laborer.getSalaryPerDay() != null ? laborer.getSalaryPerDay() : java.math.BigDecimal.ZERO)
+                                .isActive(true).remarks("").build());
+                    }
+                }
+                
+                if (!musters.isEmpty()) attendanceMusterRepository.saveAll(musters);
+                if (!payrolls.isEmpty()) monthlyPayrollRepository.saveAll(payrolls);
+            }
+        }
+
+        return savedLaborers.stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
     @Override
@@ -327,7 +382,7 @@ public class LaborerServiceImpl implements LaborerService {
     }
 
     private String normalizeGrNo(String grNo) {
-        return grNo != null ? grNo.trim().toUpperCase() : null;
+        return grNo != null ? grNo.replaceAll("\\s+", "").toUpperCase() : null;
     }
 
     private String valueOrEmpty(String value) {

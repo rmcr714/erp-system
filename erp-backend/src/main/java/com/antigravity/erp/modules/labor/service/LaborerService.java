@@ -9,5 +9,6 @@ public interface LaborerService {
     Page<LaborerDTO> getAllLaborers(Pageable pageable);
     Page<LaborerDTO> searchLaborers(String fullName, String grNo, String designation, String contactNo, Long siteId, boolean onlyActive, Pageable pageable);
     LaborerDTO addLaborer(LaborerDTO laborerDTO);
+    List<LaborerDTO> batchAddLaborers(List<LaborerDTO> dtos);
     LaborerDTO updateLaborer(String grNo, LaborerDTO laborerDTO);
 }

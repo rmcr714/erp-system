@@ -21,6 +21,7 @@ public interface DailyAttendanceRepository extends JpaRepository<DailyAttendance
     Page<DailyAttendance> findByWorkerIdAndSiteIdAndYearAndMonth(Long workerId, Long siteId, Integer year, Integer month, Pageable pageable);
     Page<DailyAttendance> findByYearAndMonth(Integer year, Integer month, Pageable pageable);
     Page<DailyAttendance> findBySiteIdAndYearAndMonth(Long siteId, Integer year, Integer month, Pageable pageable);
+    List<DailyAttendance> findBySiteIdAndYearAndMonth(Long siteId, Integer year, Integer month);
     Page<DailyAttendance> findByWorkerIdAndSiteId(Long workerId, Long siteId, Pageable pageable);
 
     @Modifying

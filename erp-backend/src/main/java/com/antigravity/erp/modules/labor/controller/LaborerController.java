@@ -107,18 +107,16 @@ public class LaborerController {
         // Re-parse to get valid rows
         ExcelImportResultDTO preview = excelImportService.preview(file, siteId);
 
-        List<LaborerDTO> saved = new ArrayList<>();
+        // Use the new optimized batch save method
         List<ExcelImportResultDTO.RowError> saveErrors = new ArrayList<>();
-
-        for (LaborerDTO dto : preview.getValidRows()) {
-            try {
-                saved.add(laborService.addLaborer(dto));
-            } catch (Exception e) {
-                saveErrors.add(ExcelImportResultDTO.RowError.builder()
-                        .grNo(dto.getGrNo())
-                        .message("Failed to save: " + e.getMessage())
-                        .build());
-            }
+        List<LaborerDTO> saved = laborService.batchAddLaborers(preview.getValidRows());
+        
+        // Calculate errors (those that were skipped because they exist in DB)
+        int skippedCount = preview.getValidRows().size() - saved.size();
+        if (skippedCount > 0) {
+            saveErrors.add(ExcelImportResultDTO.RowError.builder()
+                    .message(skippedCount + " laborers were skipped as they already exist in the database.")
+                    .build());
         }
 
         ExcelImportResultDTO result = ExcelImportResultDTO.builder()
