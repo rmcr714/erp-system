@@ -202,6 +202,10 @@ const AttendancePage: React.FC<AttendancePageProps> = ({ siteId }) => {
                             siteId={siteId}
                             initialData={filteredData}
                             isEditMode={isEditMode}
+                            currentPage={currentPage + 1}
+                            totalElements={totalElements}
+                            pageSize={pageSize}
+                            onPageChange={(page) => loadMuster(page - 1)}
                             onDataChange={(updated) => {
                                 // Update local data when child saves
                                 setData(prev => prev.map(p => {

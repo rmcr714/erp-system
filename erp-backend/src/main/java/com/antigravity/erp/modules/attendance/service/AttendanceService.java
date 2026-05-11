@@ -245,9 +245,9 @@ public class AttendanceService {
         Map<Long, MonthlyPayroll> payrollMap = payrollRepository.findBySiteIdAndMonthAndYear(siteId, month, year)
                 .stream().collect(Collectors.toMap(MonthlyPayroll::getWorkerId, p -> p));
 
-        List<AttendanceMuster> mustersToSave = new ArrayList<>();
+        java.util.Set<AttendanceMuster> mustersToSave = new java.util.HashSet<>();
         List<DailyAttendance> dailyToSave = new ArrayList<>();
-        List<MonthlyPayroll> payrollsToSave = new ArrayList<>();
+        java.util.Set<MonthlyPayroll> payrollsToSave = new java.util.HashSet<>();
 
         // 2. Process in memory
         for (AttendanceSaveRequest request : requests) {
@@ -286,11 +286,11 @@ public class AttendanceService {
                         dailyMap.put(dailyKey, daily);
                     }
                     daily.setUnits(units);
-                    if (!dailyToSave.contains(daily)) dailyToSave.add(daily);
+                    dailyToSave.add(daily);
                 }
             }
             muster.setAttendanceData(attendanceData);
-            if (!mustersToSave.contains(muster)) mustersToSave.add(muster);
+            mustersToSave.add(muster);
 
             // Update Payroll (In-memory sync)
             MonthlyPayroll payroll = payrollMap.get(workerId);
@@ -312,7 +312,7 @@ public class AttendanceService {
             payroll.setTotalAdvance(totalAdv);
             payroll.setNetBalance(grossSalary.subtract(totalAdv).subtract(debit));
             
-            if (!payrollsToSave.contains(payroll)) payrollsToSave.add(payroll);
+            payrollsToSave.add(payroll);
         }
 
         // 3. Batch Save

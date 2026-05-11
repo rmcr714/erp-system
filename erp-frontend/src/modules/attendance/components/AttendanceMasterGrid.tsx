@@ -9,6 +9,10 @@ interface AttendanceMasterGridProps {
     siteId: number;
     initialData: MonthlyMusterRow[];
     isEditMode: boolean;
+    currentPage: number;
+    totalElements: number;
+    pageSize: number;
+    onPageChange: (page: number) => void;
     onDataChange: (updatedData: MonthlyMusterRow[]) => void;
 }
 
@@ -84,16 +88,16 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
     siteId,
     initialData,
     isEditMode,
+    currentPage,
+    totalElements,
+    pageSize,
+    onPageChange,
     onDataChange 
 }, ref) => {
     const [data, setData] = useState<MonthlyMusterRow[]>(initialData);
     const [dirtyUpdates, setDirtyUpdates] = useState<Record<string, Record<number, number>>>({});
     const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const scrollContainerRef = useRef<HTMLDivElement>(null);
-    
-    // Pagination
-    const [pageSize] = useState(100);
-    const [currentPage, setCurrentPage] = useState(1);
     
     useEffect(() => {
         setData(initialData);
@@ -192,12 +196,9 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
         });
     }, [data]);
 
-    const paginatedData = useMemo(() => {
-        const start = (currentPage - 1) * pageSize;
-        return sortedData.slice(start, start + pageSize);
-    }, [sortedData, currentPage, pageSize]);
+    const paginatedData = sortedData; // Already paginated from server
 
-    const totalPages = Math.ceil(data.length / pageSize);
+    const totalPages = Math.ceil(totalElements / pageSize);
 
     const groupedData = useMemo(() => {
         const groups: Record<string, MonthlyMusterRow[]> = {};
@@ -261,40 +262,40 @@ const AttendanceMasterGrid = forwardRef<AttendanceMasterGridHandle, AttendanceMa
 
     return (
         <div className="flex flex-col h-screen bg-slate-950 text-slate-200">
-            {/* Top Toolbar: Pagination & Save Button */}
-            <div className="flex-shrink-0 border-b border-white/10 flex flex-col gap-2 bg-slate-900/80 backdrop-blur-xl">
-                {/* First Row: Pagination + Save Button */}
-                <div className="p-4 flex justify-between items-center">
+            {/* Consolidated Navigation Box: Pagination & Jump To */}
+            <div className="flex-shrink-0 m-4 mb-2 border border-white/10 rounded-xl bg-slate-900/80 backdrop-blur-xl flex flex-col divide-y divide-white/5 shadow-2xl">
+                {/* First Row: Worker Stats & Pagination */}
+                <div className="p-3 flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                        <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
-                            <button 
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1 text-sm font-medium disabled:opacity-30 hover:bg-white/5 rounded transition-all"
-                            >Prev</button>
-                            <span className="px-4 py-1 text-sm text-slate-400 border-x border-white/10 font-mono">
-                                Page {currentPage} of {totalPages}
-                            </span>
-                            <button 
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                                className="px-3 py-1 text-sm font-medium disabled:opacity-30 hover:bg-white/5 rounded transition-all"
-                            >Next</button>
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-500 border-l border-white/10 pl-4 uppercase tracking-widest">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">
                             {data.length} Laborers
                         </span>
+                        <div className="flex items-center gap-3">
+                            {syncStatus === 'saving' && <span className="text-[10px] font-bold text-sky-400 animate-pulse">SAVING...</span>}
+                            {syncStatus === 'saved' && <span className="text-[10px] font-bold text-emerald-400">CHANGES SAVED</span>}
+                            {syncStatus === 'error' && <span className="text-[10px] font-bold text-rose-400">SAVE FAILED</span>}
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        {syncStatus === 'saving' && <span className="text-[10px] font-bold text-sky-400 animate-pulse">SAVING...</span>}
-                        {syncStatus === 'saved' && <span className="text-[10px] font-bold text-emerald-400">CHANGES SAVED</span>}
-                        {syncStatus === 'error' && <span className="text-[10px] font-bold text-rose-400">SAVE FAILED</span>}
+                    <div className="flex bg-white/5 p-1 rounded-lg border border-white/10">
+                        <button 
+                            onClick={() => onPageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 text-xs font-bold disabled:opacity-30 hover:bg-white/5 rounded transition-all"
+                        >Prev</button>
+                        <span className="px-4 py-1 text-xs text-slate-400 border-x border-white/10 font-mono font-bold">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button 
+                            onClick={() => onPageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1 text-xs font-bold disabled:opacity-30 hover:bg-white/5 rounded transition-all"
+                        >Next</button>
                     </div>
                 </div>
 
-                {/* Designation Quick Jump */}
-                <div className="px-4 pb-2 flex items-center gap-2 overflow-x-auto custom-scrollbar no-scrollbar border-t border-white/5">
+                {/* Second Row: Designation Quick Jump */}
+                <div className="px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-2 whitespace-nowrap">Jump To:</span>
                     {designations.map(desig => (
                         <button
