@@ -16,16 +16,29 @@ const SitesPage: React.FC = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  const SITE_PASSWORD = 'SiteAdmin@123'; // Password for accessing the sites management screen
+  // SHA-256 hash of the site admin password
+  const SITE_PASSWORD_HASH = '9fb1467a88e89ff88e74d578a6cb3600bd0d9c857051d216c1bff5dd8f4c16eb';
 
-  const handlePasswordSubmit = () => {
-    if (passwordInput === SITE_PASSWORD) {
-      setIsAuthenticated(true);
-      setPasswordInput('');
-      setPasswordError('');
-    } else {
-      setPasswordError('Invalid password');
-      setPasswordInput('');
+  const handlePasswordSubmit = async () => {
+    try {
+      // Create SHA-256 hash of the input password
+      const encoder = new TextEncoder();
+      const data = encoder.encode(passwordInput);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const inputHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      if (inputHash === SITE_PASSWORD_HASH) {
+        setIsAuthenticated(true);
+        setPasswordInput('');
+        setPasswordError('');
+      } else {
+        setPasswordError('Invalid password');
+        setPasswordInput('');
+      }
+    } catch (err) {
+      console.error('Hashing failed', err);
+      setPasswordError('An error occurred. Please try again.');
     }
   };
 
