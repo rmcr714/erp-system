@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { siteService } from './siteService';
-import type { Site, SiteRequest } from './types';
+import type { Site } from './types';
 import toast from 'react-hot-toast';
 
 interface SiteManagerProps {

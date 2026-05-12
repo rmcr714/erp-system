@@ -51,16 +51,6 @@ const PayrollPage: React.FC<PayrollPageProps> = ({ siteId }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    // Dynamic totals calculated from current data in state
-    const currentTotals = useMemo(() => {
-        return data.reduce((acc, row) => ({
-            gross: acc.gross + (row.totalSalary || 0),
-            advances: acc.advances + (row.totalAdvance || 0),
-            net: acc.net + (row.closingBalance || 0),
-            debit: acc.debit + (row.debitBalance || 0)
-        }), { gross: 0, advances: 0, net: 0, debit: 0 });
-    }, [data]);
-
     const isPastMonth = useMemo(() => {
         const currentDate = new Date();
         return year < currentDate.getFullYear() || 

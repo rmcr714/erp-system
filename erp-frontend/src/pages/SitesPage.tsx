@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { siteService } from '../modules/site/siteService';
-import type { Site, SiteRequest } from '../modules/site/types';
+import type { Site } from '../modules/site/types';
 import toast from 'react-hot-toast';
 
 const SitesPage: React.FC = () => {
