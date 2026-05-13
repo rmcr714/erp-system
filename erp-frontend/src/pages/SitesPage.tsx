@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { siteService } from '../modules/site/siteService';
 import type { Site } from '../modules/site/types';
 import toast from 'react-hot-toast';
+import { sha256 } from '../utils/crypto';
 
 const SitesPage: React.FC = () => {
   const [sites, setSites] = useState<Site[]>([]);
@@ -21,12 +22,7 @@ const SitesPage: React.FC = () => {
 
   const handlePasswordSubmit = async () => {
     try {
-      // Create SHA-256 hash of the input password
-      const encoder = new TextEncoder();
-      const data = encoder.encode(passwordInput);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const inputHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const inputHash = await sha256(passwordInput);
 
       if (inputHash === SITE_PASSWORD_HASH) {
         setIsAuthenticated(true);
@@ -36,7 +32,7 @@ const SitesPage: React.FC = () => {
         setPasswordError('Invalid password');
         setPasswordInput('');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Hashing failed', err);
       setPasswordError('An error occurred. Please try again.');
     }
@@ -224,11 +220,10 @@ const SitesPage: React.FC = () => {
                   <p className="text-sm text-accent-primary font-mono">{site.siteCode}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    site.active
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${site.active
                       ? 'bg-green-500/20 text-green-400'
                       : 'bg-red-500/20 text-red-400'
-                  }`}>
+                    }`}>
                     {site.active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
@@ -241,11 +236,10 @@ const SitesPage: React.FC = () => {
               <div className="flex justify-between items-center">
                 <button
                   onClick={() => toggleSiteStatus(site)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    site.active
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${site.active
                       ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400'
                       : 'bg-green-500/20 hover:bg-green-500/30 text-green-400'
-                  }`}
+                    }`}
                 >
                   {site.active ? 'Deactivate' : 'Activate'}
                 </button>
